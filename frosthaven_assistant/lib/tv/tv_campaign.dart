@@ -199,6 +199,9 @@ class TvCampaigns {
     setProgress(c, scenario, next);
   }
 
+  /// Persist after editing a campaign or party member in place.
+  static void changed() => _save();
+
   static void setParty(TvCampaign c, List<PartyMember> party) {
     c.party
       ..clear()

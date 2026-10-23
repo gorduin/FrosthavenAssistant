@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../Resource/commands/add_character_command.dart';
 import '../Resource/commands/set_campaign_command.dart';
 import '../Resource/game_data.dart';
 import '../Resource/game_methods.dart';
@@ -8,6 +9,7 @@ import '../Resource/state/game_state.dart';
 import '../services/service_locator.dart';
 import 'tv_campaign.dart';
 import 'tv_menu.dart';
+import 'tv_model.dart';
 import 'tv_setup_menus.dart';
 import 'tv_strings.dart';
 import 'tv_theme.dart';
@@ -132,6 +134,9 @@ Future<void> showCampaignMenu(BuildContext context, GameState gs) {
             primary: true,
             onPressed: () => later(() => showProgressMenu(context, gs, active))),
         TvMenuButton(
+            text: tr('party'),
+            onPressed: () => later(() => showPartyMenu(context, gs, active))),
+        TvMenuButton(
             text: tr('rename'),
             onPressed: () => later(() async {
                   final n = await showTvTextInput(context,
@@ -213,5 +218,186 @@ Future<void> showProgressMenu(
     rows: rows,
     rebuildOn: TvCampaigns.version,
     start: (1, 0),
+  );
+}
+
+
+// ======================================================================
+// Party
+// ======================================================================
+
+List<Character> _gamePlayers() => GameMethods.getCurrentCharacters()
+    .where((c) => !GameMethods.isObjectiveOrEscort(c.characterClass))
+    .toList();
+
+/// Adds the characters playing now to the party, or updates their name and
+/// level (the campaign XP total is kept).
+int savePartyFromGame(TvCampaign c) {
+  int added = 0;
+  for (final ch in _gamePlayers()) {
+    final m = c.party.where((p) => p.classId == ch.characterClass.id).firstOrNull;
+    if (m == null) {
+      c.party.add(PartyMember(
+        classId: ch.characterClass.id,
+        edition: ch.characterClass.edition,
+        name: ch.characterState.display.value,
+        level: ch.characterState.level.value,
+        xp: 0,
+      ));
+      added++;
+    } else {
+      m.name = ch.characterState.display.value;
+      m.level = ch.characterState.level.value;
+    }
+  }
+  TvCampaigns.changed();
+  return added;
+}
+
+/// Puts the party members who are not in the game yet into it.
+int loadPartyIntoGame(GameState gs, TvCampaign c) {
+  int added = 0;
+  final inGame = _gamePlayers().map((e) => e.characterClass.id).toSet();
+  for (final m in c.party) {
+    if (inGame.contains(m.classId)) continue;
+    final cmd = AddCharacterCommand(m.classId, m.edition, m.name, m.level);
+    gs.action(cmd);
+    if (cmd.character != null) added++;
+  }
+  return added;
+}
+
+/// Adds the XP gained in this scenario to the campaign totals.
+/// Returns "name +n" parts for a confirmation message.
+List<String> creditScenarioXp(TvCampaign c) {
+  final out = <String>[];
+  for (final ch in _gamePlayers()) {
+    final xp = ch.characterState.xp.value;
+    var m = c.party.where((p) => p.classId == ch.characterClass.id).firstOrNull;
+    if (m == null) {
+      m = PartyMember(
+        classId: ch.characterClass.id,
+        edition: ch.characterClass.edition,
+        name: ch.characterState.display.value,
+        level: ch.characterState.level.value,
+        xp: 0,
+      );
+      c.party.add(m);
+    }
+    m.xp += xp;
+    out.add('${m.name} +$xp');
+  }
+  TvCampaigns.changed();
+  return out;
+}
+
+/// End of scenario: mark it completed and credit the XP.
+void completeScenario(BuildContext context, GameState gs, TvCampaign c) {
+  final scenario = gs.scenario.value;
+  TvCampaigns.setProgress(c, scenario, ScenarioProgress.completed);
+  final xp = creditScenarioXp(c);
+  TvToast.show(
+      context,
+      '${tr('markedCompleted')}: $scenario'
+      '${xp.isEmpty ? '' : '\n${tr('xpCredited')}: ${xp.join(', ')}'}',
+      seconds: 6);
+}
+
+Future<void> showPartyMenu(BuildContext context, GameState gs, TvCampaign c) {
+  List<TvMenuRow> rows() => [
+        if (c.party.isEmpty) TvTextRow(tr('partyEmpty')),
+        ...tvGrid([
+          for (final m in c.party)
+            TvMenuButton(
+              text: m.name,
+              subtitle: '${trLevel(m.level)} · ${m.xp} ${tr('xp')}',
+              icon: classIconPathById(m.classId),
+              iconTint: classColorById(m.classId),
+              onPressed: () => showMemberMenu(context, c, m),
+            ),
+        ], 6, label: tr('partyMembers'), style: TvRowStyle.pictures),
+        TvButtonsRow([
+          TvMenuButton(
+            text: tr('loadParty'),
+            primary: c.party.isNotEmpty,
+            onPressed: c.party.isEmpty
+                ? null
+                : () {
+                    final n = loadPartyIntoGame(gs, c);
+                    TvToast.show(context, trAddedToGame(n));
+                  },
+          ),
+          TvMenuButton(
+            text: tr('saveParty'),
+            onPressed: () {
+              final n = savePartyFromGame(c);
+              TvToast.show(context, trSavedToParty(n));
+            },
+          ),
+          TvMenuButton(
+            text: tr('creditXp'),
+            onPressed: () {
+              final xp = creditScenarioXp(c);
+              TvToast.show(context,
+                  xp.isEmpty ? tr('noPlayers') : '${tr('xpCredited')}: ${xp.join(', ')}');
+            },
+          ),
+        ]),
+        TvTextRow(tr('partyHint')),
+        TvButtonsRow([
+          TvMenuButton(text: tr('close'), closes: true, onPressed: () {}),
+        ]),
+      ];
+
+  return showTvMenu<void>(
+    context,
+    title: '${tr('party')} · ${c.name}',
+    subtitle: tr('partySub'),
+    rows: rows,
+    rebuildOn: Listenable.merge([TvCampaigns.version, gs.commandIndex]),
+  );
+}
+
+Future<void> showMemberMenu(BuildContext context, TvCampaign c, PartyMember m) {
+  return showTvMenu<void>(
+    context,
+    title: m.name,
+    subtitle: c.name,
+    image: classIconPathById(m.classId),
+    imageTint: classColorById(m.classId),
+    width: 1000,
+    rebuildOn: TvCampaigns.version,
+    rows: () => [
+      TvStepperRow(
+        label: tr('level'),
+        min: 1,
+        max: 9,
+        value: () => m.level,
+        onChange: (v) {
+          m.level = v;
+          TvCampaigns.changed();
+        },
+      ),
+      TvStepperRow(
+        label: tr('experience'),
+        min: 0,
+        max: 999,
+        value: () => m.xp,
+        onChange: (v) {
+          m.xp = v;
+          TvCampaigns.changed();
+        },
+      ),
+      TvButtonsRow([
+        TvMenuButton(
+            text: tr('removeFromParty'),
+            closes: true,
+            onPressed: () {
+              c.party.remove(m);
+              TvCampaigns.changed();
+            }),
+        TvMenuButton(text: tr('done'), primary: true, closes: true, onPressed: () {}),
+      ]),
+    ],
   );
 }

@@ -122,10 +122,7 @@ Future<void> showScenarioMenu(BuildContext context, GameState gs) {
         TvMenuButton(
           text: tr('markCompleted'),
           primary: true,
-          onPressed: () {
-            TvCampaigns.setProgress(played, current0, ScenarioProgress.completed);
-            TvToast.show(context, '${tr('markedCompleted')}: $current0');
-          },
+          onPressed: () => completeScenario(context, gs, played),
         ),
       if (played != null)
         TvMenuButton(

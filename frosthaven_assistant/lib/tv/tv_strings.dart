@@ -53,6 +53,11 @@ String trSummonColor(String c) {
 }
 String trCompletedCount(int n) => _hu ? '$n teljesítve' : '$n completed';
 String trUnlockedCount(int n) => _hu ? '$n feloldva' : '$n unlocked';
+String trAddedToGame(int n) =>
+    _hu ? '$n karakter került a játékba' : '$n character(s) added to the game';
+String trSavedToParty(int n) => _hu
+    ? 'Csapat mentve ($n új tag)'
+    : 'Party saved ($n new member${n == 1 ? '' : 's'})';
 String trLeft(int n) => _hu ? 'még $n' : '$n left';
 String trInDeck(int left) => _hu ? '$left lap a pakliban' : '$left in deck';
 
@@ -163,6 +168,26 @@ const Map<String, (String, String)> _strings = {
   'startCampaign': ('Kampány indítása', 'Start a campaign'),
   'markCompleted': ('Küldetés teljesítve', 'Scenario completed'),
   'markedCompleted': ('Teljesítve', 'Completed'),
+  'party': ('Csapat', 'Party'),
+  'partySub': (
+    'A kampány karakterei: név, szint és összesített tapasztalat',
+    'The campaign characters: name, level and total experience'
+  ),
+  'partyEmpty': (
+    'Még üres. Add hozzá a most játszó karaktereket: Mentés a játékból.',
+    'Empty. Add the characters playing now: Save from game.'
+  ),
+  'partyMembers': ('Tagok', 'Members'),
+  'loadParty': ('Betöltés a játékba', 'Load into game'),
+  'saveParty': ('Mentés a játékból', 'Save from game'),
+  'creditXp': ('Küldetés TP jóváírása', 'Credit scenario XP'),
+  'xpCredited': ('TP jóváírva', 'XP credited'),
+  'noPlayers': ('Nincs játszó karakter', 'No characters playing'),
+  'partyHint': (
+    'A „Küldetés teljesítve” gomb a TP-t is jóváírja. Bukott küldetésnél a „Küldetés TP jóváírása” gombbal teheted meg.',
+    '“Scenario completed” also credits XP. After a lost scenario use “Credit scenario XP”.'
+  ),
+  'removeFromParty': ('Eltávolítás a csapatból', 'Remove from party'),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),

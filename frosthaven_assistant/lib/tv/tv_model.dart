@@ -1,7 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/painting.dart';
 
+import '../Model/character_class.dart';
 import '../Model/monster.dart';
+import '../Resource/game_data.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/settings.dart';
@@ -100,6 +102,20 @@ String characterSubline(Character c) {
   final lvl = trLevel(c.characterState.level.value);
   return c.characterState.display.value == cls ? lvl : '$cls · $lvl';
 }
+
+CharacterClass? _classById(String id) {
+  for (final c in getIt<GameData>().modelData.value.values) {
+    for (final cls in c.characters) {
+      if (cls.id == id) return cls;
+    }
+  }
+  return null;
+}
+
+String classIconPathById(String id) =>
+    'assets/images/class-icons/${_classById(id)?.name ?? id}.png';
+
+Color? classColorById(String id) => _classById(id)?.color;
 
 String monsterImagePath(Monster m) =>
     'assets/images/monsters/${m.type.gfx}.png';
