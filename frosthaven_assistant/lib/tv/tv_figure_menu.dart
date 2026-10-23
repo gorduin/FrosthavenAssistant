@@ -12,6 +12,7 @@ import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
+import 'tv_play_menus.dart';
 import 'tv_setup_menus.dart';
 import 'tv_strings.dart';
 
@@ -149,8 +150,21 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (context.mounted) f();
         });
+    final noteName = ch != null
+        ? ch.characterState.display.value
+        : (item is Monster ? item.type.display : title);
+    final noteButton = TvMenuButton(
+        text: tr('editNote'),
+        active: item.note.value.isNotEmpty,
+        closes: true,
+        onPressed: () => later(() => editNote(context, gs, item, noteName)));
     if (ch != null && isPlayer) {
       out.add(TvButtonsRow([
+        TvMenuButton(
+            text: tr('addSummon'),
+            closes: true,
+            onPressed: () => later(() => showSummonMenu(context, gs, ch))),
+        noteButton,
         TvMenuButton(
             text: tr('characterLevel'),
             closes: true,
@@ -173,6 +187,7 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
             text: tr('addStandees'),
             closes: true,
             onPressed: () => later(() => showStandeeMenu(context, gs, monster))),
+        noteButton,
         TvMenuButton(
             text: tr('removeMonster'),
             closes: true,

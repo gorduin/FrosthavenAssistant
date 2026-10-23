@@ -12,10 +12,12 @@ import '../Resource/enums.dart';
 import '../Resource/game_actions.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
+import '../services/network/network.dart';
 import '../services/service_locator.dart';
 import 'tv_figure_menu.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
+import 'tv_play_menus.dart';
 import 'tv_setup_menus.dart';
 import 'tv_strings.dart';
 import 'tv_theme.dart';
@@ -77,6 +79,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     _changes.addListener(_onGameChanged);
     _gs.pendingAutoAddDialog.addListener(_checkPendingStandees);
     _gs.toastMessage.addListener(_onToastMessage);
+    getIt<Network>().networkMessage.addListener(_onNetworkMessage);
     unawaited(TvLang.load());
     _refocusTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       _keepFocus();
@@ -106,6 +109,12 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     });
   }
 
+  void _onNetworkMessage() {
+    final msg = getIt<Network>().networkMessage.value;
+    if (msg.isEmpty || !mounted) return;
+    TvToast.show(context, msg, seconds: 5);
+  }
+
   /// Game messages (e.g. "remember to choose your battle goals").
   void _onToastMessage() {
     final msg = _gs.toastMessage.value;
@@ -118,6 +127,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     _changes.removeListener(_onGameChanged);
     _gs.pendingAutoAddDialog.removeListener(_checkPendingStandees);
     _gs.toastMessage.removeListener(_onToastMessage);
+    getIt<Network>().networkMessage.removeListener(_onNetworkMessage);
     _okTimer?.cancel();
     _refocusTimer?.cancel();
     _focus.dispose();
@@ -242,44 +252,12 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
   }
 
   void _openSettings() {
-    _openMenu(() => showTvMenu<void>(
-          context,
-          title: tr('settings'),
-          rebuildOn: TvLang.current,
-          width: 900,
-          rows: () => [
-            TvButtonsRow([
-              TvMenuButton(
-                  text: 'Magyar',
-                  active: TvLang.current.value == 'hu',
-                  onPressed: () => TvLang.set('hu')),
-              TvMenuButton(
-                  text: 'English',
-                  active: TvLang.current.value == 'en',
-                  onPressed: () => TvLang.set('en')),
-            ], label: tr('language')),
-            TvButtonsRow([
-              TvMenuButton(
-                  text: tr('undo'),
-                  onPressed: () => _gs.undo()),
-              TvMenuButton(
-                  text: tr('redo'),
-                  onPressed: () => _gs.redo()),
-            ], label: tr('actions')),
-            TvButtonsRow([
-              TvMenuButton(
-                text: tr('classicView'),
-                closes: true,
-                onPressed: () {
-                  tvClassicView.value = true;
-                  TvToast.show(context, tr('classicHint'));
-                },
-              ),
-              TvMenuButton(text: tr('close'), closes: true, onPressed: () {}),
-            ]),
-          ],
-        ));
+    _openMenu(() => showTvSettings(context, _gs, onClassicView: () {
+          tvClassicView.value = true;
+          TvToast.show(context, tr('classicHint'));
+        }));
   }
+
 
   void _confirmExit() {
     _openMenu(() => showTvMenu<void>(
@@ -497,27 +475,46 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     _confirmExit();
   }
 
-  List<TvFooterButton> _footerButtons() {
+  List<(TvFooterButton, VoidCallback)> _footer() {
     final isDraw = _gs.roundState.value == RoundState.chooseInitiative;
     return [
-      TvFooterButton(isDraw ? tr('draw') : tr('nextRound'),
-          primary: true, icon: isDraw ? Icons.style : Icons.skip_next),
-      TvFooterButton(tr('drawModifier'), icon: Icons.layers),
-      TvFooterButton(tr('btnDeck'), icon: Icons.tune),
-      TvFooterButton(tr('btnScenario'), icon: Icons.map_outlined),
-      TvFooterButton(tr('btnAddChar'), icon: Icons.person_add_alt_1),
-      TvFooterButton(tr('btnAddMonster'), icon: Icons.add_circle_outline),
+      (
+        TvFooterButton(isDraw ? tr('draw') : tr('nextRound'),
+            primary: true, icon: isDraw ? Icons.style : Icons.skip_next),
+        _drawOrNextRound
+      ),
+      (TvFooterButton(tr('drawModifier'), icon: Icons.layers), _drawModifier),
+      if (hasLootDeck(_gs))
+        (
+          TvFooterButton(tr('btnLoot'), icon: Icons.diamond_outlined),
+          () => _openMenu(() => showLootMenu(context, _gs))
+        ),
+      if (sectionsOf(_gs).isNotEmpty)
+        (
+          TvFooterButton(tr('btnSection'), icon: Icons.door_front_door_outlined),
+          () => _openMenu(() => showSectionMenu(context, _gs))
+        ),
+      (
+        TvFooterButton(tr('btnDeck'), icon: Icons.tune),
+        () => _openMenu(() => showDeckMenu(context, _gs))
+      ),
+      (
+        TvFooterButton(tr('btnScenario'), icon: Icons.map_outlined),
+        () => _openMenu(() => showScenarioMenu(context, _gs))
+      ),
+      (
+        TvFooterButton(tr('btnAddChar'), icon: Icons.person_add_alt_1),
+        () => _openMenu(() => showAddCharacterMenu(context, _gs))
+      ),
+      (
+        TvFooterButton(tr('btnAddMonster'), icon: Icons.add_circle_outline),
+        () => _openMenu(() => showAddMonsterMenu(context, _gs))
+      ),
     ];
   }
 
-  List<VoidCallback> _footerActions() => [
-        _drawOrNextRound,
-        _drawModifier,
-        () => _openMenu(() => showDeckMenu(context, _gs)),
-        () => _openMenu(() => showScenarioMenu(context, _gs)),
-        () => _openMenu(() => showAddCharacterMenu(context, _gs)),
-        () => _openMenu(() => showAddMonsterMenu(context, _gs)),
-      ];
+  List<TvFooterButton> _footerButtons() => [for (final f in _footer()) f.$1];
+  List<VoidCallback> _footerActions() => [for (final f in _footer()) f.$2];
 
   // ---------------------------------------------------------------- build
 
@@ -590,7 +587,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
                         controller: _scroll,
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Column(children: [
-                          for (int i = 0; i < list.length; i++)
+                          for (int i = 0; i < list.length; i++) ...[
                             if (list[i] is Character || list[i] is Monster)
                               Padding(
                                 key: _rowKeys.putIfAbsent(i, () => GlobalKey()),
@@ -603,6 +600,13 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
                                   reordering: _reorderRow == i,
                                 ),
                               ),
+                            if (list[i] is NoteRow)
+                              Padding(
+                                key: _rowKeys.putIfAbsent(i, () => GlobalKey()),
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: TvNoteRow(note: list[i] as NoteRow),
+                              ),
+                          ],
                         ]),
                       ),
               ),

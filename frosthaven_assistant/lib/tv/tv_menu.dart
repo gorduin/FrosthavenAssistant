@@ -87,6 +87,12 @@ List<TvMenuRow> tvGrid(List<TvMenuButton> items, int perRow,
   return out;
 }
 
+/// Any widget between rows (not selectable), rebuilt with the menu.
+class TvWidgetRow extends TvMenuRow {
+  const TvWidgetRow(this.builder, {super.label});
+  final Widget Function() builder;
+}
+
 /// A plain line of text between rows (not selectable).
 class TvTextRow extends TvMenuRow {
   const TvTextRow(this.text) : super();
@@ -549,6 +555,8 @@ class _TvMenuState extends State<TvMenu> {
         runSpacing: 12,
         children: [for (int c = 0; c < row.items.length; c++) item(c)],
       );
+    } else if (row is TvWidgetRow) {
+      content = row.builder();
     } else if (row is TvTextRow) {
       content = tvText(row.text, TvText.body(20, color: TvColors.muted));
     } else {
@@ -849,5 +857,120 @@ class TvToast {
       _entry?.remove();
       _entry = null;
     });
+  }
+}
+
+
+/// Text entry with the system keyboard (on Google TV the on-screen keyboard
+/// opens). The keyboard's "done" / Enter saves, Back cancels (returns null).
+Future<String?> showTvTextInput(BuildContext context,
+    {required String title, String initial = '', String? subtitle}) {
+  return showGeneralDialog<String>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: const Color(0xB3000000),
+    transitionDuration: Duration.zero,
+    pageBuilder: (ctx, a1, a2) =>
+        _TvTextInput(title: title, initial: initial, subtitle: subtitle),
+  );
+}
+
+class _TvTextInput extends StatefulWidget {
+  const _TvTextInput({required this.title, required this.initial, this.subtitle});
+  final String title;
+  final String initial;
+  final String? subtitle;
+
+  @override
+  State<_TvTextInput> createState() => _TvTextInputState();
+}
+
+class _TvTextInputState extends State<_TvTextInput> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initial);
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.selection =
+        TextSelection.collapsed(offset: _controller.text.length);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focus.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            Navigator.of(context).pop(),
+      },
+      child: TvStage(
+        child: Align(
+          alignment: const Alignment(0, -0.55),
+          child: Container(
+            width: 1180,
+            padding: const EdgeInsets.fromLTRB(36, 28, 36, 28),
+            decoration: BoxDecoration(
+              color: TvColors.panel,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: TvColors.line),
+              boxShadow: const [BoxShadow(color: Color(0xCC000000), blurRadius: 60)],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.title, style: TvText.title(46)),
+                if (widget.subtitle != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(widget.subtitle!,
+                        style: TvText.body(21, color: TvColors.muted)),
+                  ),
+                const SizedBox(height: 22),
+                Material(
+                  color: TvColors.card,
+                  borderRadius: BorderRadius.circular(14),
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focus,
+                    autofocus: true,
+                    textInputAction: TextInputAction.done,
+                    style: TvText.body(30),
+                    cursorColor: TvColors.focus,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 22, vertical: 20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: TvColors.focus, width: 3),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: TvColors.focus, width: 3),
+                      ),
+                    ),
+                    onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(tr('textInputHint'),
+                    style: TvText.body(18, color: TvColors.muted)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

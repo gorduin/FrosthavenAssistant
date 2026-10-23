@@ -432,6 +432,7 @@ class TvListRow extends StatelessWidget {
       required String name,
       required String sub,
       double width = 310}) {
+    final note = item.note.value;
     return SizedBox(
       width: width,
       child: Padding(
@@ -453,6 +454,14 @@ class TvListRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TvText.body(17, color: TvColors.muted)),
+                  if (note.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: tvText('✎ $note',
+                          TvText.body(17, color: TvColors.elite),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
+                    ),
                 ]),
           ),
         ]),
@@ -1065,24 +1074,27 @@ class TvFooter extends StatelessWidget {
       ),
       child: Row(children: [
         for (int i = 0; i < buttons.length; i++) ...[
-          _btn(buttons[i], focusIndex == i),
-          const SizedBox(width: 14),
+          _btn(buttons[i], focusIndex == i, compact),
+          SizedBox(width: compact ? 10 : 14),
         ],
         const SizedBox(width: 10),
-        Expanded(
-          child: tvText(hint, TvText.body(17, color: TvColors.dim),
-              textAlign: TextAlign.right,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis),
-        ),
+        if (!compact)
+          Expanded(
+            child: tvText(hint, TvText.body(17, color: TvColors.dim),
+                textAlign: TextAlign.right,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis),
+          ),
       ]),
     );
   }
 
-  Widget _btn(TvFooterButton b, bool focused) {
+  bool get compact => buttons.length > 6;
+
+  Widget _btn(TvFooterButton b, bool focused, bool compact) {
     return Container(
       height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 26),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 18 : 26),
       decoration: BoxDecoration(
         color: b.primary ? TvColors.focus : TvColors.panel2,
         borderRadius: BorderRadius.circular(12),
@@ -1109,6 +1121,31 @@ class TvFooter extends StatelessWidget {
                 color: b.primary ? TvColors.onFocus : TvColors.fg,
                 weight: FontWeight.w600)),
       ]),
+    );
+  }
+}
+
+
+/// A note row of the initiative list (read-only on the TV).
+class TvNoteRow extends StatelessWidget {
+  const TvNoteRow({super.key, required this.note});
+  final NoteRow note;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = note.text.value;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+      decoration: BoxDecoration(
+        color: TvColors.panel,
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          left: BorderSide(color: Color(note.color.value), width: 6),
+        ),
+      ),
+      child: tvText('✎ ${text.isEmpty ? '…' : text}',
+          TvText.body(20, color: TvColors.muted),
+          maxLines: 2, overflow: TextOverflow.ellipsis),
     );
   }
 }

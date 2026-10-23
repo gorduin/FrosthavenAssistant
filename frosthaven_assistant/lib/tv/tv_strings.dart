@@ -42,6 +42,15 @@ String trStandees(int n) => _hu ? '$n standee' : '$n standee${n == 1 ? '' : 's'}
 String trPlayers(int n) => _hu ? '$n játékos' : '$n player${n == 1 ? '' : 's'}';
 String trCardsLeft(int n) => _hu ? '$n lap van hátra' : '$n cards left';
 String trStandeeNr(int n) => _hu ? '$n-es standee' : 'standee $n';
+String trLootCards(int n) => _hu ? '$n lap' : '$n card${n == 1 ? '' : 's'}';
+String trServerOn(String ip, String port) => _hu
+    ? 'A szerver fut. A telefonos X-haven Assistantben csatlakozz ide: $ip, port $port'
+    : 'Server running. In the X-haven Assistant phone app connect to $ip, port $port';
+String trSummonColor(String c) {
+  const hu = {'blue': 'Kék', 'green': 'Zöld', 'yellow': 'Sárga', 'orange': 'Narancs'};
+  const en = {'blue': 'Blue', 'green': 'Green', 'yellow': 'Yellow', 'orange': 'Orange'};
+  return (_hu ? hu[c] : en[c]) ?? c;
+}
 String trLeft(int n) => _hu ? 'még $n' : '$n left';
 String trInDeck(int left) => _hu ? '$left lap a pakliban' : '$left in deck';
 
@@ -90,6 +99,43 @@ const Map<String, (String, String)> _strings = {
   'removeCharacter': ('Karakter eltávolítása', 'Remove character'),
   'removeMonster': ('Szörny eltávolítása', 'Remove monster'),
   'characterLevel': ('Karakter szintje', 'Character level'),
+  'loot': ('Zsákmány', 'Loot'),
+  'lootSub': ('Húzáskor a soron lévő karakteré lesz a lap', 'A drawn card goes to the character whose turn it is'),
+  'drawLoot': ('Zsákmánylap húzása', 'Draw loot card'),
+  'lootOwner': ('Kié a legutóbbi lap?', 'Who gets the last card?'),
+  'btnLoot': ('Zsákmány', 'Loot'),
+  'btnSection': ('Szakasz', 'Section'),
+  'sections': ('Szakaszok', 'Sections'),
+  'sectionMenu': ('Szakasz hozzáadása', 'Add section'),
+  'summonColor': ('Szín', 'Colour'),
+  'summonNumber': ('Szám', 'Number'),
+  'summons': ('Idézések', 'Summons'),
+  'summonMenu': ('Idézés', 'Summon'),
+  'addSummon': ('Idézés', 'Summon'),
+  'note': ('Jegyzet', 'Note'),
+  'editNote': ('Jegyzet', 'Note'),
+  'textInputHint': (
+    'Írj a billentyűzettel · Kész / Enter: mentés · üresen mentve törli · Vissza: mégse',
+    'Type with the keyboard · Done / Enter: save · save empty to clear · Back: cancel'
+  ),
+  'rules': ('Játékszabályok', 'Rules'),
+  'setInitRequired': ('Kezdeményezés kötelező', 'Initiative required'),
+  'setExpireConditions': ('Állapotok lejárnak', 'Conditions expire'),
+  'setAutoAddStandees': ('Standee-felrakás indításkor', 'Place standees at start'),
+  'setAutoAddSpawns': ('Időzített érkezők', 'Timed spawns'),
+  'setRandomStandees': ('Véletlen standee-számok', 'Random standee numbers'),
+  'setNoCalculation': ('Nincs számolás a kártyán', 'No card calculations'),
+  'setBattleGoals': ('Harci cél emlékeztető', 'Battle goal reminder'),
+  'setReminders': ('Körszabály emlékeztetők', 'Round rule reminders'),
+  'setHideLoot': ('Zsákmánypakli elrejtése', 'Hide loot deck'),
+  'setCustomContent': ('Egyéni tartalom', 'Custom content'),
+  'network': ('Hálózat', 'Network'),
+  'startServer': ('Szerver indítása', 'Start server'),
+  'stopServer': ('Szerver fut · leállítás', 'Server running · stop'),
+  'serverOffHint': (
+    'Szerverként a telefonok is követhetik és vezérelhetik a játékot.',
+    'As a server, phones can follow and control the game too.'
+  ),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),
