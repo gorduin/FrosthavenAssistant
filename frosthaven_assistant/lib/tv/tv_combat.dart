@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import '../Layout/ModifierCardWidget/modifier_card_front.dart';
 import '../Layout/MonsterAbilityCardWidget/monster_ability_card_front.dart';
 import '../Resource/app_constants.dart';
+import '../Resource/commands/change_stat_commands/change_health_command.dart';
+import '../Resource/commands/change_stat_commands/change_xp_command.dart';
 import '../Resource/commands/draw_modifier_card_command.dart';
 import '../Resource/commands/turn_done_command.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_actions.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
+import 'tv_figure_menu.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
 import 'tv_strings.dart';
@@ -43,7 +46,7 @@ Future<void> showCombatGuide(BuildContext context, GameState gs) {
       }
       if (cur == null) return _roundEnd(gs);
       if (cur is Monster) return _monsterTurn(gs, cur);
-      return _characterTurn(gs, cur);
+      return _characterTurn(context, gs, cur);
     },
   );
 }
@@ -119,7 +122,8 @@ String _reminderOf(Condition c) {
   return TvLang.current.value == 'hu' ? r.$1 : r.$2;
 }
 
-List<TvMenuRow> _characterTurn(GameState gs, ListItemData cur) {
+List<TvMenuRow> _characterTurn(
+    BuildContext context, GameState gs, ListItemData cur) {
   final ch = cur as Character;
   final st = ch.characterState;
   final conds = st.conditions.value;
@@ -184,7 +188,67 @@ List<TvMenuRow> _characterTurn(GameState gs, ListItemData cur) {
           ),
         ])),
     _navButtons(gs, cur),
+    ..._characterEdits(context, gs, ch),
   ];
+}
+
+/// Health / XP of the character (and its summons) and quick access to the
+/// monsters on the table, so the round can be played without leaving here.
+List<TvMenuRow> _characterEdits(BuildContext context, GameState gs, Character ch) {
+  final st = ch.characterState;
+  final out = <TvMenuRow>[
+    TvStepperRow(
+      label: tr('health'),
+      min: 0,
+      max: st.maxHealth.value,
+      value: () => st.health.value,
+      format: (v) => '$v / ${st.maxHealth.value}',
+      onChange: (v) {
+        final d = v - st.health.value;
+        if (d != 0) gs.action(ChangeHealthCommand(d, ch.id, ch.id, gameState: gs));
+      },
+    ),
+    if (!GameMethods.isObjectiveOrEscort(ch.characterClass))
+      TvStepperRow(
+        label: tr('experience'),
+        min: 0,
+        max: 99,
+        digits: 2,
+        value: () => st.xp.value,
+        onChange: (v) {
+          final d = v - st.xp.value;
+          if (d != 0) gs.action(ChangeXPCommand(d, ch.id, ch.id, gameState: gs));
+        },
+      ),
+    for (final s in st.summonList)
+      TvStepperRow(
+        label: '${s.name}${s.standeeNr > 0 ? ' ${s.standeeNr}' : ''}',
+        min: 0,
+        max: s.maxHealth.value,
+        value: () => s.health.value,
+        format: (v) => '$v / ${s.maxHealth.value}',
+        onChange: (v) {
+          final d = v - s.health.value;
+          if (d != 0) {
+            gs.action(ChangeHealthCommand(d, s.getId(), ch.id, gameState: gs));
+          }
+        },
+      ),
+  ];
+  // monsters on the table: OK opens the standee's menu (health, conditions)
+  final standees = buildTargets(gs).where((t) => t.isStandee && !t.isSummon).toList();
+  if (standees.isNotEmpty) {
+    out.addAll(tvGrid([
+      for (final t in standees)
+        TvMenuButton(
+          text: '${(t.item as Monster).type.display} ${t.instance!.standeeNr}'
+              '${t.instance!.type == MonsterType.elite ? ' ${tr('elite').toLowerCase()}' : ''} · '
+              '${t.instance!.health.value}/${t.instance!.maxHealth.value}',
+          onPressed: () => showFigureMenu(context, gs, t),
+        ),
+    ], 3, label: tr('combatMonsters')));
+  }
+  return out;
 }
 
 // ----------------------------------------------------------------- monster

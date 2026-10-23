@@ -250,6 +250,7 @@ const Map<String, (String, String)> _strings = {
   'backupAuto': ('automatikusan ment kör végén és kampányváltozáskor', 'saves automatically after each round and campaign change'),
   'backupLoading': ('Mentések betöltése…', 'Loading backups…'),
   'backupNone': ('Még nincs mentés a tárhelyen', 'No backups on the web space yet'),
+  'combatMonsters': ('Szörnyek (OK: életerő, állapotok)', 'Monsters (OK: health, conditions)'),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),
