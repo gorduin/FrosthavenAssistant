@@ -21,7 +21,7 @@ class Settings {
 
   final userScalingMainList = ValueNotifier<double>(1.0);
   final userScalingBars = ValueNotifier<double>(
-      (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+      (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS))
           ? _kDesktopBarScale
           : 1.0);
   final userScalingMenus = ValueNotifier<double>(1.0);
@@ -34,7 +34,7 @@ class Settings {
   final expireConditions = ValueNotifier<bool>(true);
   final hideLootDeck = ValueNotifier<bool>(false);
   final shimmer = ValueNotifier<bool>(
-      (Platform.isWindows || Platform.isLinux || Platform.isMacOS));
+      (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)));
 
   /// Opt-in display power saving, in escalating tiers. Defaults to
   /// [PowerMode.normal]: the higher tiers trade away polish or convenience, so
@@ -140,7 +140,7 @@ class Settings {
   Future<void> setFullscreen(bool fullscreen) async {
     fullScreen.value = fullscreen;
     //to set fullscreen on pc - need to add exit button to quit //would be good to exit/enter mode with ctrl+enter
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       WidgetsFlutterBinding.ensureInitialized();
       windowManager.ensureInitialized();
 

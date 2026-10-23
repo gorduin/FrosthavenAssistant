@@ -76,7 +76,7 @@ Future<void> main() async {
 
   await loadLinuxFonts();
 
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
     windowManager.setTitle(title);
     windowManager.setMinimumSize(const Size(minScreenWidth, minScreenHeight));

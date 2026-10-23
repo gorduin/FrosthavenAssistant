@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:math';
 
@@ -308,7 +309,7 @@ class SettingsMenuState extends State<SettingsMenu> {
                   settings.saveToDisk();
                   _gameState.updateAllUI();
                 }),
-            if (!Platform.isIOS)
+            if (kIsWeb || !Platform.isIOS)
               SettingsCheckbox(
                   title: l10n.settingsFullscreen,
                   notifier: settings.fullScreen,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -265,7 +266,7 @@ class MainMenu extends StatelessWidget {
                   Navigator.pop(context);
                 },
               ),
-              if (!Platform.isIOS)
+              if (kIsWeb || !Platform.isIOS)
                 ListTile(
                   title: Text(l10n.menuDonate),
                   onTap: () {
@@ -278,7 +279,7 @@ class MainMenu extends StatelessWidget {
                     Navigator.pop(context);
                   },
                 ),
-              Platform.isMacOS || Platform.isLinux || Platform.isWindows
+              !kIsWeb && (Platform.isMacOS || Platform.isLinux || Platform.isWindows)
                   ? ListTile(
                       title: Text(l10n.menuExit),
                       enabled: true,
