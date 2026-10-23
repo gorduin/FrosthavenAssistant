@@ -111,9 +111,18 @@ class TvStepperRow extends TvMenuRow {
     this.format,
     this.min = 0,
     this.max = 999,
+    this.digits,
+    this.autoEdit = false,
   }) : super(label: label);
 
   final int Function() value;
+
+  /// Number of digits for digit-by-digit editing (OK enters it: ◀▶ choose
+  /// the place value, ▲▼ change the digit). null: plain ±1 stepper.
+  final int? digits;
+
+  /// Start in digit editing when the menu opens on this row.
+  final bool autoEdit;
 
   /// Called with the new value (already clamped).
   final void Function(int value) onChange;
@@ -206,6 +215,43 @@ class _TvMenuState extends State<TvMenu> {
   int? _pending;
   final Map<int, GlobalKey> _rowKeys = {};
 
+  /// Digit editing of the selected stepper row, and the edited place
+  /// (0 = leftmost digit).
+  bool _editing = false;
+  int _digit = 0;
+
+  int _digitCount(TvStepperRow row) {
+    final n = row.digits ?? 1;
+    final len = row.value().abs().toString().length;
+    return len > n ? len : n;
+  }
+
+  int _placeValue(int n) {
+    int pow = 1;
+    for (int i = 0; i < n - 1 - _digit; i++) {
+      pow *= 10;
+    }
+    return pow;
+  }
+
+  void _changeDigit(TvStepperRow row, int delta) {
+    final v = row.value();
+    final pow = _placeValue(_digitCount(row));
+    final d = (v ~/ pow) % 10;
+    final nd = (d + delta + 10) % 10;
+    final nv = (v + (nd - d) * pow).clamp(row.min, row.max);
+    if (nv != v) row.onChange(nv);
+  }
+
+  void _startEditIfAuto(List<TvMenuRow> rows) {
+    if (_row < 0 || _row >= rows.length) return;
+    final row = rows[_row];
+    if (row is TvStepperRow && row.autoEdit && row.digits != null) {
+      _editing = true;
+      _digit = 0;
+    }
+  }
+
   void _scheduleScroll() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = _rowKeys[_row]?.currentContext;
@@ -226,7 +272,9 @@ class _TvMenuState extends State<TvMenu> {
     widget.rebuildOn?.addListener(_rebuild);
     TvLang.current.addListener(_rebuild);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focus.requestFocus();
+      if (!mounted) return;
+      _focus.requestFocus();
+      setState(() => _startEditIfAuto(widget.rows()));
     });
     // take the focus back if it gets lost while this menu is on top
     _refocusTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
@@ -311,6 +359,13 @@ class _TvMenuState extends State<TvMenu> {
     _row = _row.clamp(0, rows.length - 1);
     final row = rows[_row];
 
+    if (_editing) {
+      if (row is! TvStepperRow || row.digits == null) {
+        _editing = false;
+      } else {
+        return _onEditKey(row, k, e, rows);
+      }
+    }
     if (k == LogicalKeyboardKey.escape || k == LogicalKeyboardKey.goBack) {
       // act on key up, and only for a press that started in this menu
       if (e is KeyDownEvent) {
@@ -385,6 +440,12 @@ class _TvMenuState extends State<TvMenu> {
             setState(() {});
           }
         }
+      } else if (row is TvStepperRow && row.digits != null) {
+        // OK on a digit stepper: edit it digit by digit
+        setState(() {
+          _editing = true;
+          _digit = 0;
+        });
       } else if (row is TvStepperRow) {
         // OK on a stepper: move on to the next row
         if (_row < rows.length - 1) {
@@ -416,6 +477,60 @@ class _TvMenuState extends State<TvMenu> {
       }
     }
     return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _onEditKey(TvStepperRow row, LogicalKeyboardKey k, KeyEvent e,
+      List<TvMenuRow> rows) {
+    final isBack = k == LogicalKeyboardKey.escape || k == LogicalKeyboardKey.goBack;
+    if (isBack) {
+      // Back leaves the digit editing (on key up, like everywhere)
+      if (e is KeyDownEvent) {
+        _backDown = true;
+      } else if (e is KeyUpEvent && _backDown) {
+        _backDown = false;
+        setState(() => _editing = false);
+      }
+      return KeyEventResult.handled;
+    }
+    if (e is KeyUpEvent) return KeyEventResult.handled;
+    final n = _digitCount(row);
+    if (k == LogicalKeyboardKey.arrowUp || k == LogicalKeyboardKey.arrowDown) {
+      _changeDigit(row, k == LogicalKeyboardKey.arrowUp ? 1 : -1);
+      setState(() {});
+      return KeyEventResult.handled;
+    }
+    if (e is KeyRepeatEvent) return KeyEventResult.handled;
+    if (k == LogicalKeyboardKey.arrowLeft) {
+      setState(() => _digit = (_digit - 1).clamp(0, n - 1));
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.arrowRight) {
+      setState(() => _digit = (_digit + 1).clamp(0, n - 1));
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.select ||
+        k == LogicalKeyboardKey.enter ||
+        k == LogicalKeyboardKey.numpadEnter ||
+        k == LogicalKeyboardKey.gameButtonA) {
+      // done: leave the editing and go on to the next row
+      setState(() {
+        _editing = false;
+        if (_row < rows.length - 1) _row++;
+      });
+      _scheduleScroll();
+      return KeyEventResult.handled;
+    }
+    final digit = _digitOf(k);
+    if (digit != null) {
+      // typed digit: set the current place and step right
+      final v = row.value();
+      final pow = _placeValue(n);
+      final d = (v ~/ pow) % 10;
+      final nv = (v + (digit - d) * pow).clamp(row.min, row.max);
+      if (nv != v) row.onChange(nv);
+      setState(() => _digit = (_digit + 1).clamp(0, n - 1));
+    }
+    return KeyEventResult.handled;
   }
 
   int? _digitOf(LogicalKeyboardKey k) {
@@ -582,6 +697,7 @@ class _TvMenuState extends State<TvMenu> {
   Widget _stepper(TvStepperRow row, bool selected) {
     final v = row.value();
     final text = row.format?.call(v) ?? '$v';
+    if (selected && _editing && row.digits != null) return _digitEditor(row);
     return Container(
       height: 76,
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -601,7 +717,46 @@ class _TvMenuState extends State<TvMenu> {
         ),
         tvText('▶', TvText.body(26, color: selected ? TvColors.focus : TvColors.dim)),
         const Spacer(),
-        if (selected) tvText(tr('stepperHint'), TvText.body(17, color: TvColors.muted)),
+        if (selected)
+          tvText(row.digits != null ? tr('digitStepperHint') : tr('stepperHint'),
+              TvText.body(17, color: TvColors.muted)),
+      ]),
+    );
+  }
+
+  Widget _digitEditor(TvStepperRow row) {
+    final n = _digitCount(row);
+    final s = row.value().abs().toString().padLeft(n, '0');
+    return Container(
+      height: 112,
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      decoration: tvFocusRing(radius: 14, fill: TvColors.panel2),
+      child: Row(children: [
+        SizedBox(
+            width: 300,
+            child: Text(row.label!, style: TvText.body(26, weight: FontWeight.w600))),
+        for (int i = 0; i < n; i++)
+          Container(
+            width: 72,
+            height: 92,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              color: i == _digit ? const Color(0xFF1E3A50) : TvColors.card,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: i == _digit ? TvColors.focus : TvColors.line,
+                  width: i == _digit ? 3 : 1),
+            ),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.arrow_drop_up,
+                  size: 26, color: i == _digit ? TvColors.focus : Colors.transparent),
+              Text(s[i], style: TvText.body(40, weight: FontWeight.w700)),
+              Icon(Icons.arrow_drop_down,
+                  size: 26, color: i == _digit ? TvColors.focus : Colors.transparent),
+            ]),
+          ),
+        const Spacer(),
+        tvText(tr('digitEditHint'), TvText.body(17, color: TvColors.muted)),
       ]),
     );
   }

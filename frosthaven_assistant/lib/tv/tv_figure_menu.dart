@@ -71,6 +71,8 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
         label: tr('initiative'),
         min: 0,
         max: 99,
+        digits: 2,
+        autoEdit: startInit <= 0,
         value: () => pendingInit,
         format: (v) => v <= 0 ? '–' : v.toString().padLeft(2, '0'),
         onChange: (v) => pendingInit = v,
@@ -96,7 +98,8 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
       out.add(TvStepperRow(
         label: tr('experience'),
         min: 0,
-        max: 999,
+        max: 99,
+        digits: 2,
         value: () => st.xp.value,
         onChange: (v) {
           final d = v - st.xp.value;

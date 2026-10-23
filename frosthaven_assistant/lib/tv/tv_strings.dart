@@ -208,6 +208,11 @@ const Map<String, (String, String)> _strings = {
   'saveChangesQ': ('Ezek változnak a csapatban:', 'These will change in the party:'),
   'save': ('Mentés', 'Save'),
   'xpTotal': ('össz.', 'total'),
+  'digitStepperHint': ('◀ ▶ ±1 · OK: számjegyenként', '◀ ▶ ±1 · OK: digit by digit'),
+  'digitEditHint': (
+    '◀ ▶ helyiérték · ▲ ▼ számjegy · OK kész',
+    '◀ ▶ place · ▲ ▼ digit · OK done'
+  ),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),

@@ -415,6 +415,7 @@ Future<void> showMemberMenu(BuildContext context, TvCampaign c, PartyMember m) {
         label: tr('experience'),
         min: 0,
         max: 999,
+        digits: 3,
         value: () => m.xp,
         onChange: (v) {
           m.xp = v;
