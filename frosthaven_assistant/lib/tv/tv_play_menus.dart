@@ -19,6 +19,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import 'phone_server.dart';
 import 'tv_menu.dart';
+import 'tv_backup.dart';
 import 'tv_prefs.dart';
 import 'tv_model.dart';
 import 'tv_strings.dart';
@@ -324,6 +325,9 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
     PhoneServer.clients,
     TvPrefs.hideEmptyMonsters,
     TvPrefs.hideMonsterCards,
+    TvBackup.lastOk,
+    TvBackup.lastError,
+    TvBackup.busy,
     settings.server,
     network.networkInfo.wifiIPv6,
     for (final t in toggles) t.notifier,
@@ -388,6 +392,24 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
         TvTextRow('${PhoneServer.url.value} · ${trPhones(PhoneServer.clients.value)}'),
       TvButtonsRow([
         TvMenuButton(
+          text: TvBackup.busy.value ? tr('backupBusy') : tr('backupNow'),
+          onPressed: !TvBackup.configured || TvBackup.busy.value
+              ? null
+              : () async {
+                  final ok = await TvBackup.backupNow('manual', force: true);
+                  if (context.mounted) {
+                    TvToast.show(context, ok ? tr('backupDone') : '${tr('backupFailed')}: ${TvBackup.lastError.value}');
+                  }
+                },
+        ),
+        TvMenuButton(
+          text: tr('restoreBackup'),
+          onPressed: !TvBackup.configured ? null : () => showRestoreMenu(context, gs),
+        ),
+      ], label: tr('backup')),
+      TvTextRow(_backupStatus()),
+      TvButtonsRow([
+        TvMenuButton(
           text: serverOn ? tr('stopServer') : tr('startServer'),
           active: serverOn,
           onPressed: () {
@@ -420,6 +442,100 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
   );
 }
 
+
+// ======================================================================
+// Backup to the own web space
+// ======================================================================
+
+String _two(int n) => n.toString().padLeft(2, '0');
+
+String _when(DateTime t) =>
+    '${t.year}.${_two(t.month)}.${_two(t.day)}. ${_two(t.hour)}:${_two(t.minute)}';
+
+String _backupStatus() {
+  if (!TvBackup.configured) return tr('backupNotConfigured');
+  final last = TvBackup.lastOk.value;
+  final err = TvBackup.lastError.value;
+  final parts = <String>[
+    last == null ? tr('backupNever') : '${tr('backupLast')}: ${_when(last)}',
+    if (err.isNotEmpty) '${tr('backupFailed')}: $err',
+    tr('backupAuto'),
+  ];
+  return parts.join(' · ');
+}
+
+Future<void> showRestoreMenu(BuildContext context, GameState gs) async {
+  List<Map<String, dynamic>> backups;
+  try {
+    TvToast.show(context, tr('backupLoading'));
+    backups = await TvBackup.list();
+  } catch (e) {
+    if (context.mounted) TvToast.show(context, '${tr('backupFailed')}: $e');
+    return;
+  }
+  if (!context.mounted) return;
+  if (backups.isEmpty) {
+    TvToast.show(context, tr('backupNone'));
+    return;
+  }
+  String label(Map<String, dynamic> b) {
+    final created = DateTime.tryParse('${b['created']}');
+    return created == null ? '${b['name']}' : _when(created);
+  }
+
+  await showTvMenu<void>(
+    context,
+    title: tr('restoreBackup'),
+    subtitle: tr('restoreSub'),
+    rows: () => [
+      ...tvGrid([
+        for (final b in backups)
+          TvMenuButton(
+            text: label(b),
+            subtitle: [
+              if (b['scenario'] != null && '${b['scenario']}'.isNotEmpty) '${b['scenario']}',
+              if (b['round'] != null) '${b['round']}. ${tr('round')}',
+            ].join(' · '),
+            closes: true,
+            onPressed: () => WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) _confirmRestore(context, gs, b['name'] as String, label(b));
+            }),
+          ),
+      ], 3, label: tr('backups'), style: TvRowStyle.tiles),
+      TvButtonsRow([
+        TvMenuButton(text: tr('close'), closes: true, onPressed: () {}),
+      ]),
+    ],
+  );
+}
+
+Future<void> _confirmRestore(
+    BuildContext context, GameState gs, String name, String label) {
+  return showTvMenu<void>(
+    context,
+    title: tr('restoreQ'),
+    subtitle: '$label — ${tr('restoreWarn')}',
+    width: 1000,
+    rows: () => [
+      TvButtonsRow([
+        TvMenuButton(text: tr('cancel'), closes: true, onPressed: () {}),
+        TvMenuButton(
+          text: tr('restore'),
+          primary: true,
+          closes: true,
+          onPressed: () async {
+            try {
+              await TvBackup.restore(name);
+              if (context.mounted) TvToast.show(context, tr('restored'));
+            } catch (e) {
+              if (context.mounted) TvToast.show(context, '${tr('backupFailed')}: $e');
+            }
+          },
+        ),
+      ]),
+    ],
+  );
+}
 
 // ======================================================================
 // Phone companion QR code

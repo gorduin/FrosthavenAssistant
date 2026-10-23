@@ -9,6 +9,7 @@ import '../Resource/game_methods.dart';
 import '../Resource/settings.dart';
 import '../Resource/state/game_state.dart';
 import '../services/service_locator.dart';
+import 'tv_backup.dart';
 import 'tv_campaign.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
@@ -332,6 +333,7 @@ void completeScenario(BuildContext context, GameState gs, TvCampaign c) {
   final scenario = gs.scenario.value;
   TvCampaigns.setProgress(c, scenario, ScenarioProgress.completed);
   final xp = creditScenarioXp(c);
+  TvBackup.backupNow('scenario');
   TvToast.show(
       context,
       '${tr('markedCompleted')}: $scenario'

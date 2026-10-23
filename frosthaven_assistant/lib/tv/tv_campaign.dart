@@ -199,6 +199,27 @@ class TvCampaigns {
     setProgress(c, scenario, next);
   }
 
+  /// Everything for a backup: all campaigns and the active one.
+  static Map<String, dynamic> exportJson() => {
+        'campaigns': [for (final c in all) c.toJson()],
+        'active': _activeId,
+      };
+
+  /// Replaces the campaigns with the ones of a backup.
+  static void importJson(Map<String, dynamic> j) {
+    final list = j['campaigns'];
+    if (list is! List) return;
+    all
+      ..clear()
+      ..addAll([
+        for (final c in list)
+          if (c is Map<String, dynamic>) TvCampaign.fromJson(c)
+      ]);
+    final active = j['active'];
+    _activeId = active is String && all.any((c) => c.id == active) ? active : null;
+    _save();
+  }
+
   /// Persist after editing a campaign or party member in place.
   static void changed() => _save();
 

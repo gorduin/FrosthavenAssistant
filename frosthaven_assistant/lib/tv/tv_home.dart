@@ -17,6 +17,7 @@ import '../services/service_locator.dart';
 import 'tv_figure_menu.dart';
 import 'tv_menu.dart';
 import 'phone_server.dart';
+import 'tv_backup.dart';
 import 'tv_campaign.dart';
 import 'tv_combat.dart';
 import 'tv_prefs.dart';
@@ -93,6 +94,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     unawaited(TvCampaigns.load());
     unawaited(TvPrefs.load());
     unawaited(PhoneServer.restore());
+    unawaited(TvBackup.start(_gs));
     _refocusTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       _keepFocus();
     });
