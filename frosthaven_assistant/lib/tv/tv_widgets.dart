@@ -83,7 +83,7 @@ class TvHeader extends StatelessWidget {
       ),
       child: Row(children: [
         SizedBox(
-          width: 560,
+          width: 500,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,7 +120,7 @@ class TvHeader extends StatelessWidget {
                 style: TvText.label(19, color: TvColors.muted)),
           ],
         ),
-        const SizedBox(width: 40),
+        const SizedBox(width: 28),
         _chip(
             child: Row(children: [
           _img('assets/images/psd/level.png', w: 28, h: 28),

@@ -64,9 +64,10 @@ mask-position:center;-webkit-mask-size:contain;mask-size:contain}
 background:#0b141d;color:var(--fg)}
 .init .cur{font-size:44px;font-weight:800;text-align:center}
 .primary{background:var(--focus);color:#06202a;border-color:transparent;font-weight:700;height:60px;width:100%;font-size:19px}
-.conds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.cond{padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted);
-opacity:.55}
+.conds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cond{min-width:0;padding:8px 3px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;
+line-height:1.15;color:var(--muted);opacity:.55}
+.cond span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cond img{width:34px;height:34px}
 .cond.on{opacity:1;border-color:var(--focus);background:#1e3a50;color:var(--fg)}
 .sum{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}

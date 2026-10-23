@@ -68,7 +68,7 @@ class PhoneServer {
     try {
       final server = await HttpServer.bind(InternetAddress.anyIPv4, port, shared: true);
       _server = server;
-      _code = (1000 + Random.secure().nextInt(9000)).toString();
+      _code = await _loadOrCreateCode();
       server.listen(_handle, onError: (Object e) => debugPrint('phone: $e'));
       running.value = true;
       url.value = 'http://${await _localIp()}:$port/?k=$_code';
@@ -91,6 +91,21 @@ class PhoneServer {
     _server = null;
     running.value = false;
     url.value = '';
+  }
+
+  /// The join code stays the same across restarts, so phones that already
+  /// scanned the QR code reconnect by themselves.
+  static Future<String> _loadOrCreateCode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('tv_phone_code');
+      if (saved != null && saved.length == 4) return saved;
+      final c = (1000 + Random.secure().nextInt(9000)).toString();
+      await prefs.setString('tv_phone_code', c);
+      return c;
+    } catch (_) {
+      return (1000 + Random.secure().nextInt(9000)).toString();
+    }
   }
 
   static Future<String> _localIp() async {
