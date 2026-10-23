@@ -1005,7 +1005,7 @@ class TvAbilityPanel extends StatelessWidget {
   /// Smaller card (the stat card takes the room above).
   final bool compact;
 
-  double get _cardScale => compact ? 2.3 : 3.3;
+  double get _cardScale => compact ? 2.0 : 3.3;
 
   @override
   Widget build(BuildContext context) {
