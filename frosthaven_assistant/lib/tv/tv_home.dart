@@ -18,6 +18,7 @@ import 'tv_figure_menu.dart';
 import 'tv_menu.dart';
 import 'phone_server.dart';
 import 'tv_campaign.dart';
+import 'tv_prefs.dart';
 import 'tv_model.dart';
 import 'tv_play_menus.dart';
 import 'tv_setup_menus.dart';
@@ -74,6 +75,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     for (final e in Elements.values) _gs.elementStateFor(e),
     TvLang.current,
     TvCampaigns.version,
+    TvPrefs.hideEmptyMonsters,
     PhoneServer.running,
     PhoneServer.clients,
   ]);
@@ -87,6 +89,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     getIt<Network>().networkMessage.addListener(_onNetworkMessage);
     unawaited(TvLang.load());
     unawaited(TvCampaigns.load());
+    unawaited(TvPrefs.load());
     unawaited(PhoneServer.restore());
     _refocusTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       _keepFocus();
@@ -595,7 +598,8 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Column(children: [
                           for (int i = 0; i < list.length; i++) ...[
-                            if (list[i] is Character || list[i] is Monster)
+                            if (list[i] is Character ||
+                                (list[i] is Monster && monsterVisible(list[i] as Monster)))
                               Padding(
                                 key: _rowKeys.putIfAbsent(i, () => GlobalKey()),
                                 padding: const EdgeInsets.only(bottom: 14),

@@ -540,6 +540,11 @@ Future<void> showAddMonsterMenu(BuildContext context, GameState gs) {
   bool isAdded(MonsterModel m) =>
       GameMethods.getCurrentMonsters().any((e) => e.id == m.name);
 
+  /// In the game, but no standee on the table yet (hidden from the list).
+  Monster? waiting(MonsterModel m) => gs.currentList.firstWhereOrNull(
+          (e) => e is Monster && e.id == m.name && e.monsterInstances.isEmpty)
+      as Monster?;
+
   void add(MonsterModel m) {
     gs.action(AddMonsterCommand(m.name, null, asAlly, gameState: gs));
     final monster = gs.currentList
@@ -595,8 +600,16 @@ Future<void> showAddMonsterMenu(BuildContext context, GameState gs) {
           subtitle: m.levels.first.boss != null ? tr('boss') : null,
           icon: 'assets/images/monsters/${m.gfx}.png',
           coverImage: true,
-          disabledNote: isAdded(m) ? tr('alreadyAdded') : null,
-          onPressed: isAdded(m) ? null : () => add(m),
+          disabledNote: waiting(m) != null
+              ? tr('notOnTable')
+              : isAdded(m)
+                  ? tr('alreadyAdded')
+                  : null,
+          onPressed: waiting(m) != null
+              ? () => showStandeeMenu(context, gs, waiting(m)!)
+              : isAdded(m)
+                  ? null
+                  : () => add(m),
         ),
     ], 6, label: tr('monsters'), style: TvRowStyle.pictures));
     out.add(TvButtonsRow([

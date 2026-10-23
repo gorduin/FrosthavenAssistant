@@ -19,6 +19,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import 'phone_server.dart';
 import 'tv_menu.dart';
+import 'tv_prefs.dart';
 import 'tv_model.dart';
 import 'tv_strings.dart';
 import 'tv_theme.dart';
@@ -321,6 +322,7 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
     TvLang.current,
     PhoneServer.running,
     PhoneServer.clients,
+    TvPrefs.hideEmptyMonsters,
     settings.server,
     network.networkInfo.wifiIPv6,
     for (final t in toggles) t.notifier,
@@ -346,6 +348,12 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
         TvMenuButton(text: tr('redo'), onPressed: () => gs.redo()),
       ], label: tr('actions')),
       ...tvGrid([
+        TvMenuButton(
+          text: tr('setHideEmptyMonsters'),
+          active: TvPrefs.hideEmptyMonsters.value,
+          onPressed: () =>
+              TvPrefs.setHideEmptyMonsters(!TvPrefs.hideEmptyMonsters.value),
+        ),
         for (final t in toggles)
           TvMenuButton(
             text: tr(t.key),

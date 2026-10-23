@@ -213,6 +213,8 @@ const Map<String, (String, String)> _strings = {
     '◀ ▶ helyiérték · ▲ ▼ számjegy · OK kész',
     '◀ ▶ place · ▲ ▼ digit · OK done'
   ),
+  'notOnTable': ('nincs a táblán · OK: standee', 'not on the table · OK: standees'),
+  'setHideEmptyMonsters': ('Csak a táblán lévő szörnyek', 'Only monsters on the table'),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),

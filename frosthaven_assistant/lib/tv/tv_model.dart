@@ -10,6 +10,7 @@ import '../Resource/settings.dart';
 import '../Resource/state/game_state.dart';
 import '../Resource/ui_utils.dart';
 import '../services/service_locator.dart';
+import 'tv_prefs.dart';
 import 'tv_strings.dart';
 
 /// One remote-selectable figure on the main screen: a character, one of its
@@ -66,6 +67,7 @@ List<TvTarget> buildTargets(GameState gs) {
             figure: s));
       }
     } else if (item is Monster) {
+      if (!monsterVisible(item)) continue;
       final instances = item.monsterInstances;
       if (instances.isEmpty) {
         out.add(TvTarget(
@@ -244,9 +246,16 @@ Monster? cardMonsterFor(GameState gs, TvTarget? t) {
       e.turnState.value == TurnsState.notDone &&
       (e.monsterInstances.isNotEmpty || e.isActive));
   if (next is Monster) return next;
-  final any = list.firstWhereOrNull((e) => e is Monster);
+  final any = list.firstWhereOrNull((e) => e is Monster && monsterVisible(e));
   return any is Monster ? any : null;
 }
+
+/// Monsters without standees on the table are hidden (they belong to later
+/// rooms) unless the TV preference shows them.
+bool monsterVisible(Monster m) =>
+    !TvPrefs.hideEmptyMonsters.value ||
+    m.monsterInstances.isNotEmpty ||
+    m.isActive;
 
 /// Initiative shown in a row; null when unknown (shows "–").
 int? rowInitiative(GameState gs, ListItemData item) {
