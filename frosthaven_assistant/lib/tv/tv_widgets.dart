@@ -6,6 +6,7 @@ import '../Resource/app_constants.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
+import 'tv_campaign.dart';
 import 'tv_model.dart';
 import 'tv_strings.dart';
 import 'tv_theme.dart';
@@ -92,7 +93,13 @@ class TvHeader extends StatelessWidget {
                   style: TvText.title(44)),
               const SizedBox(height: 4),
               Text(
-                [campaign.toUpperCase(), trPlayers(chars).toUpperCase()]
+                [
+                  if (TvCampaigns.active != null &&
+                      TvCampaigns.active!.edition == campaign)
+                    TvCampaigns.active!.name.toUpperCase(),
+                  campaign.toUpperCase(),
+                  trPlayers(chars).toUpperCase()
+                ]
                     .where((s) => s.isNotEmpty)
                     .join(' · '),
                 style: TvText.label(19, color: TvColors.muted),

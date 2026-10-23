@@ -51,6 +51,8 @@ String trSummonColor(String c) {
   const en = {'blue': 'Blue', 'green': 'Green', 'yellow': 'Yellow', 'orange': 'Orange'};
   return (_hu ? hu[c] : en[c]) ?? c;
 }
+String trCompletedCount(int n) => _hu ? '$n teljesítve' : '$n completed';
+String trUnlockedCount(int n) => _hu ? '$n feloldva' : '$n unlocked';
 String trLeft(int n) => _hu ? 'még $n' : '$n left';
 String trInDeck(int left) => _hu ? '$left lap a pakliban' : '$left in deck';
 
@@ -136,6 +138,31 @@ const Map<String, (String, String)> _strings = {
     'Szerverként a telefonok is követhetik és vezérelhetik a játékot.',
     'As a server, phones can follow and control the game too.'
   ),
+  'unlocked': ('feloldva', 'unlocked'),
+  'completed': ('teljesítve', 'completed'),
+  'newCampaign': ('Új kampány', 'New campaign'),
+  'campaignNameQ': ('Mi legyen a kampány (csapat) neve?', 'Name of the campaign (party)?'),
+  'chooseEdition': ('Melyik játékkal játszotok?', 'Which game are you playing?'),
+  'campaigns': ('Kampányok', 'Campaigns'),
+  'noCampaigns': ('Még nincs kampány. Hozz létre egyet!', 'No campaigns yet. Create one!'),
+  'noCampaign': ('Kampány nélkül', 'No campaign'),
+  'markScenarios': ('Küldetések jelölése', 'Mark scenarios'),
+  'rename': ('Átnevezés', 'Rename'),
+  'delete': ('Törlés', 'Delete'),
+  'activeCampaign': ('Aktív kampány', 'Active campaign'),
+  'campaignMenu': ('Kampány', 'Campaign'),
+  'campaignMenuSub': (
+    'A teljesített és feloldott küldetések és a csapat kampányonként mentődnek',
+    'Completed and unlocked scenarios and the party are saved per campaign'
+  ),
+  'deleteCampaignQ': ('Törlöd a kampányt?', 'Delete the campaign?'),
+  'progressHint': (
+    'OK: jelöletlen → feloldva → teljesítve',
+    'OK: none → unlocked → completed'
+  ),
+  'startCampaign': ('Kampány indítása', 'Start a campaign'),
+  'markCompleted': ('Küldetés teljesítve', 'Scenario completed'),
+  'markedCompleted': ('Teljesítve', 'Completed'),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),

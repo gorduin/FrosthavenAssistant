@@ -27,6 +27,7 @@ class TvMenuButton {
     this.iconTint,
     this.subtitle,
     this.coverImage = false,
+    this.accent,
   });
 
   final String text;
@@ -49,6 +50,9 @@ class TvMenuButton {
 
   /// Picture style: fill the image area (monster art) instead of fitting.
   final bool coverImage;
+
+  /// Tile style: colour of the title and border (state marking).
+  final Color? accent;
 
   bool get enabled => onPressed != null;
 }
@@ -703,13 +707,20 @@ class _TvMenuState extends State<TvMenu> {
   }
 
   Widget _textTile(TvMenuButton b, bool selected) {
+    final accent = b.accent;
+    var deco = _tileDeco(b, selected);
+    if (accent != null && !selected) {
+      deco = deco.copyWith(
+          color: accent.withValues(alpha: 0.12),
+          border: Border.all(color: accent.withValues(alpha: 0.7), width: 2));
+    }
     return Opacity(
       opacity: b.enabled ? 1 : 0.4,
       child: Container(
         width: 266,
         height: 92,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: _tileDeco(b, selected),
+        decoration: deco,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -720,10 +731,10 @@ class _TvMenuState extends State<TvMenu> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TvText.title(28,
-                        color: b.active ? TvColors.focus : TvColors.fg)),
+                        color: accent ?? (b.active ? TvColors.focus : TvColors.fg))),
               ),
               if (b.active)
-                const Icon(Icons.check_circle, color: TvColors.focus, size: 22),
+                Icon(Icons.check_circle, color: accent ?? TvColors.focus, size: 22),
             ]),
             if (b.subtitle != null) ...[
               const SizedBox(height: 4),

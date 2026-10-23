@@ -26,6 +26,8 @@ import '../Resource/game_methods.dart';
 import '../Resource/settings.dart';
 import '../Resource/state/game_state.dart';
 import '../services/service_locator.dart';
+import 'tv_campaign.dart';
+import 'tv_campaign_menus.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
 import 'tv_strings.dart';
@@ -101,6 +103,36 @@ Future<void> showScenarioMenu(BuildContext context, GameState gs) {
   (int, int)? scenarioStart;
   List<TvMenuRow> rows() {
     final out = <TvMenuRow>[];
+    final camp = TvCampaigns.active;
+    final played = campaignFor(gs);
+    final current0 = gs.scenario.value;
+    final canComplete = played != null &&
+        current0.isNotEmpty &&
+        played.of(current0) != ScenarioProgress.completed &&
+        trackableScenarios(gs, played.edition).contains(current0);
+    out.add(TvButtonsRow([
+      TvMenuButton(
+        text: camp == null
+            ? tr('startCampaign')
+            : '${tr('campaign')}: ${camp.name}',
+        primary: camp == null,
+        onPressed: () => showCampaignMenu(context, gs),
+      ),
+      if (canComplete)
+        TvMenuButton(
+          text: tr('markCompleted'),
+          primary: true,
+          onPressed: () {
+            TvCampaigns.setProgress(played, current0, ScenarioProgress.completed);
+            TvToast.show(context, '${tr('markedCompleted')}: $current0');
+          },
+        ),
+      if (played != null)
+        TvMenuButton(
+          text: tr('markScenarios'),
+          onPressed: () => showProgressMenu(context, gs, played),
+        ),
+    ], label: tr('campaign')));
     out.add(TvButtonsRow([
       for (int l = 0; l <= 7; l++)
         TvMenuButton(
@@ -141,9 +173,19 @@ Future<void> showScenarioMenu(BuildContext context, GameState gs) {
               ? () {}
               : () => gs.action(SetCampaignCommand(c)),
         ),
-    ], 4, label: tr('campaign')));
+    ], 4, label: tr('edition')));
     final current = gs.scenario.value;
-    final scenarios = scenariosOf(gs, campaign);
+    var scenarios = scenariosOf(gs, campaign);
+    if (played != null) {
+      // campaign: unlocked (not yet completed) scenarios come first
+      final head = scenarios.where((s) => s == 'custom' || s == '#Random Dungeon');
+      final open = scenarios.where((s) => played.of(s) == ScenarioProgress.unlocked);
+      final rest = scenarios.where((s) =>
+          s != 'custom' &&
+          s != '#Random Dungeon' &&
+          played.of(s) != ScenarioProgress.unlocked);
+      scenarios = [...head, ...open, ...rest];
+    }
     final idx = scenarios.indexOf(current);
     scenarioStart = idx < 0
         ? (out.length, 0)
@@ -152,9 +194,13 @@ Future<void> showScenarioMenu(BuildContext context, GameState gs) {
       for (final s in scenarios)
         () {
           final t = _scenarioTitle(s);
+          final look = played == null
+              ? (null, '')
+              : progressLook(played.of(s));
           return TvMenuButton(
             text: t.$1,
-            subtitle: t.$2,
+            subtitle: '${look.$2}${t.$2}',
+            accent: look.$1,
             active: s == current,
             closes: true,
             onPressed: () =>
@@ -173,7 +219,7 @@ Future<void> showScenarioMenu(BuildContext context, GameState gs) {
         ? null
         : '${tr('currentScenario')}: ${gs.scenario.value}',
     rows: rows,
-    rebuildOn: gs.commandIndex,
+    rebuildOn: Listenable.merge([gs.commandIndex, TvCampaigns.version]),
     // start on the first scenario: picking one is the usual reason to come here
     start: scenarioStart,
   );

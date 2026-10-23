@@ -16,6 +16,7 @@ import '../services/network/network.dart';
 import '../services/service_locator.dart';
 import 'tv_figure_menu.dart';
 import 'tv_menu.dart';
+import 'tv_campaign.dart';
 import 'tv_model.dart';
 import 'tv_play_menus.dart';
 import 'tv_setup_menus.dart';
@@ -71,6 +72,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     _gs.scenario,
     for (final e in Elements.values) _gs.elementStateFor(e),
     TvLang.current,
+    TvCampaigns.version,
   ]);
 
   @override
@@ -81,6 +83,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     _gs.toastMessage.addListener(_onToastMessage);
     getIt<Network>().networkMessage.addListener(_onNetworkMessage);
     unawaited(TvLang.load());
+    unawaited(TvCampaigns.load());
     _refocusTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       _keepFocus();
     });
