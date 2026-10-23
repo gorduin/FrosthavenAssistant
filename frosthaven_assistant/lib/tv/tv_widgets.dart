@@ -410,9 +410,12 @@ class TvListRow extends StatelessWidget {
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Pirata's glyphs are taller than its line box: give
+                      // the number a real line height so it stays inside
                       Text(init == null ? '–' : init.toString().padLeft(2, '0'),
-                          style: TvText.title(54,
-                              color: init == null ? TvColors.dim : TvColors.fg)),
+                          style: TvText.title(46,
+                                  color: init == null ? TvColors.dim : TvColors.fg)
+                              .copyWith(height: 1.3)),
                       const SizedBox(height: 4),
                       Text(tr('init').toUpperCase(), style: TvText.label(13)),
                     ]),
