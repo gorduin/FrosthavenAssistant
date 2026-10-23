@@ -16,6 +16,7 @@ import '../services/service_locator.dart';
 import 'tv_figure_menu.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
+import 'tv_setup_menus.dart';
 import 'tv_strings.dart';
 import 'tv_theme.dart';
 import 'tv_widgets.dart';
@@ -74,13 +75,51 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
   void initState() {
     super.initState();
     _changes.addListener(_onGameChanged);
+    _gs.pendingAutoAddDialog.addListener(_checkPendingStandees);
+    _gs.toastMessage.addListener(_onToastMessage);
     unawaited(TvLang.load());
+    _refocusTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      _keepFocus();
+    });
+  }
+
+  Timer? _refocusTimer;
+
+  /// Focus can get lost (the view or app loses focus and Flutter falls back to
+  /// the root scope); while this screen is on top it takes the focus back.
+  void _keepFocus() {
+    if (!mounted || _focus.hasFocus) return;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
+    _focus.requestFocus();
+  }
+
+  /// Scenario start: the game asks for standees to be placed. Runs as soon as
+  /// no other menu is open (the scenario menu closes right after setting it).
+  void _checkPendingStandees() {
+    final data = _gs.pendingAutoAddDialog.value;
+    if (data == null || _menuOpen || !mounted) return;
+    _gs.pendingAutoAddDialog.value = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _openMenu(() => runAutoAddStandees(context, _gs, data));
+    });
+  }
+
+  /// Game messages (e.g. "remember to choose your battle goals").
+  void _onToastMessage() {
+    final msg = _gs.toastMessage.value;
+    if (msg.isEmpty || !mounted) return;
+    TvToast.show(context, msg, seconds: 7);
   }
 
   @override
   void dispose() {
     _changes.removeListener(_onGameChanged);
+    _gs.pendingAutoAddDialog.removeListener(_checkPendingStandees);
+    _gs.toastMessage.removeListener(_onToastMessage);
     _okTimer?.cancel();
+    _refocusTimer?.cancel();
     _focus.dispose();
     _scroll.dispose();
     super.dispose();
@@ -197,6 +236,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
       if (mounted) {
         _focus.requestFocus();
         setState(() {});
+        _checkPendingStandees();
       }
     }
   }
@@ -463,10 +503,21 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
       TvFooterButton(isDraw ? tr('draw') : tr('nextRound'),
           primary: true, icon: isDraw ? Icons.style : Icons.skip_next),
       TvFooterButton(tr('drawModifier'), icon: Icons.layers),
+      TvFooterButton(tr('btnDeck'), icon: Icons.tune),
+      TvFooterButton(tr('btnScenario'), icon: Icons.map_outlined),
+      TvFooterButton(tr('btnAddChar'), icon: Icons.person_add_alt_1),
+      TvFooterButton(tr('btnAddMonster'), icon: Icons.add_circle_outline),
     ];
   }
 
-  List<VoidCallback> _footerActions() => [_drawOrNextRound, _drawModifier];
+  List<VoidCallback> _footerActions() => [
+        _drawOrNextRound,
+        _drawModifier,
+        () => _openMenu(() => showDeckMenu(context, _gs)),
+        () => _openMenu(() => showScenarioMenu(context, _gs)),
+        () => _openMenu(() => showAddCharacterMenu(context, _gs)),
+        () => _openMenu(() => showAddMonsterMenu(context, _gs)),
+      ];
 
   // ---------------------------------------------------------------- build
 

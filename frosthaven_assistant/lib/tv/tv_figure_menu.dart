@@ -5,12 +5,14 @@ import '../Resource/commands/change_stat_commands/change_health_command.dart';
 import '../Resource/commands/change_stat_commands/change_xp_command.dart';
 import '../Resource/commands/remove_condition_command.dart';
 import '../Resource/commands/set_init_command.dart';
+import '../Resource/commands/set_level_command.dart';
 import '../Resource/commands/turn_done_command.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
+import 'tv_setup_menus.dart';
 import 'tv_strings.dart';
 
 /// OK on a figure: initiative, health, XP, conditions and turn actions.
@@ -103,6 +105,16 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
         },
       ));
     }
+    final Monster? monster = item is Monster ? item : null;
+    if (monster != null) {
+      out.add(TvStepperRow(
+        label: tr('monsterLevel'),
+        min: 0,
+        max: 7,
+        value: () => monster.level.value,
+        onChange: (v) => gs.action(SetLevelCommand(v, monster.id)),
+      ));
+    }
     if (fig != null && conditions.isNotEmpty) {
       const perRow = 6;
       for (int i = 0; i < conditions.length; i += perRow) {
@@ -132,6 +144,41 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
         ),
       TvMenuButton(text: tr('close'), primary: true, closes: true, onPressed: () {}),
     ], label: tr('actions')));
+    // setup actions open their own menu once this one has closed
+    void later(void Function() f) =>
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) f();
+        });
+    if (ch != null && isPlayer) {
+      out.add(TvButtonsRow([
+        TvMenuButton(
+            text: tr('characterLevel'),
+            closes: true,
+            onPressed: () => later(() => showCharacterLevelMenu(context, gs, ch))),
+        TvMenuButton(
+            text: tr('removeCharacter'),
+            closes: true,
+            onPressed: () => later(() => confirmRemoveCharacter(context, gs, ch))),
+      ]));
+    } else if (ch != null) {
+      out.add(TvButtonsRow([
+        TvMenuButton(
+            text: tr('removeCharacter'),
+            closes: true,
+            onPressed: () => later(() => confirmRemoveCharacter(context, gs, ch))),
+      ]));
+    } else if (monster != null) {
+      out.add(TvButtonsRow([
+        TvMenuButton(
+            text: tr('addStandees'),
+            closes: true,
+            onPressed: () => later(() => showStandeeMenu(context, gs, monster))),
+        TvMenuButton(
+            text: tr('removeMonster'),
+            closes: true,
+            onPressed: () => later(() => confirmRemoveMonster(context, gs, monster))),
+      ]));
+    }
     return out;
   }
 

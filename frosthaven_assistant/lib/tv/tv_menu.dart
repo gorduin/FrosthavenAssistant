@@ -25,6 +25,8 @@ class TvMenuButton {
     this.primary = false,
     this.disabledNote,
     this.iconTint,
+    this.subtitle,
+    this.coverImage = false,
   });
 
   final String text;
@@ -42,15 +44,53 @@ class TvMenuButton {
   final String? disabledNote;
   final Color? iconTint;
 
+  /// Second line on tile / picture styles.
+  final String? subtitle;
+
+  /// Picture style: fill the image area (monster art) instead of fitting.
+  final bool coverImage;
+
   bool get enabled => onPressed != null;
 }
 
-class TvButtonsRow extends TvMenuRow {
-  const TvButtonsRow(this.items, {super.label, this.iconGrid = false});
-  final List<TvMenuButton> items;
+enum TvRowStyle {
+  /// Text buttons.
+  buttons,
 
-  /// Big icon tiles (conditions) instead of text buttons.
-  final bool iconGrid;
+  /// Small icon tiles that light up when active (conditions).
+  icons,
+
+  /// Picture tiles with a name (classes, monsters).
+  pictures,
+
+  /// Text tiles with a title and a subtitle (scenarios).
+  tiles,
+}
+
+class TvButtonsRow extends TvMenuRow {
+  const TvButtonsRow(this.items,
+      {super.label, bool iconGrid = false, TvRowStyle? style})
+      : style = style ?? (iconGrid ? TvRowStyle.icons : TvRowStyle.buttons);
+  final List<TvMenuButton> items;
+  final TvRowStyle style;
+}
+
+/// Splits [items] into rows of [perRow], so the visual rows match the ▲▼ rows.
+List<TvMenuRow> tvGrid(List<TvMenuButton> items, int perRow,
+    {String? label, TvRowStyle style = TvRowStyle.buttons}) {
+  final out = <TvMenuRow>[];
+  for (int i = 0; i < items.length; i += perRow) {
+    final end = i + perRow > items.length ? items.length : i + perRow;
+    out.add(TvButtonsRow(items.sublist(i, end),
+        label: i == 0 ? label : null, style: style));
+  }
+  return out;
+}
+
+/// A plain line of text between rows (not selectable).
+class TvTextRow extends TvMenuRow {
+  const TvTextRow(this.text) : super();
+  final String text;
 }
 
 class TvStepperRow extends TvMenuRow {
@@ -82,6 +122,8 @@ Future<T?> showTvMenu<T>(
   Listenable? rebuildOn,
   double width = 1180,
   VoidCallback? onClose,
+  bool Function()? closeWhen,
+  (int, int)? start,
 }) {
   return showGeneralDialog<T>(
     context: context,
@@ -99,6 +141,8 @@ Future<T?> showTvMenu<T>(
       rebuildOn: rebuildOn,
       width: width,
       onClose: onClose,
+      closeWhen: closeWhen,
+      start: start,
     ),
     transitionBuilder: (ctx, anim, _, child) => child,
   );
@@ -115,6 +159,8 @@ class TvMenu extends StatefulWidget {
     this.rebuildOn,
     this.width = 1180,
     this.onClose,
+    this.closeWhen,
+    this.start,
   });
 
   final String title;
@@ -125,6 +171,12 @@ class TvMenu extends StatefulWidget {
   final Listenable? rebuildOn;
   final double width;
   final VoidCallback? onClose;
+
+  /// Checked after every button press; true closes the menu.
+  final bool Function()? closeWhen;
+
+  /// Initially selected (row, column); defaults to the first enabled item.
+  final (int, int)? start;
 
   @override
   State<TvMenu> createState() => _TvMenuState();
@@ -138,9 +190,25 @@ class _TvMenuState extends State<TvMenu> {
   int _repeats = 0;
   bool _closed = false;
   bool _backDown = false;
+  Timer? _refocusTimer;
 
   /// Pending stepper value (committed on change, shown immediately).
   int? _pending;
+  final Map<int, GlobalKey> _rowKeys = {};
+
+  void _scheduleScroll() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _rowKeys[_row]?.currentContext;
+      if (!mounted || ctx == null) return;
+      Scrollable.ensureVisible(ctx,
+          alignment: 0.5,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.explicit);
+    });
+  }
+
+  bool _selectable(TvMenuRow row) =>
+      row is TvStepperRow ||
+      (row is TvButtonsRow && row.items.isNotEmpty);
 
   @override
   void initState() {
@@ -150,8 +218,42 @@ class _TvMenuState extends State<TvMenu> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focus.requestFocus();
     });
-    // start on the first enabled button
+    // take the focus back if it gets lost while this menu is on top
+    _refocusTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted || _closed || _focus.hasFocus) return;
+      final route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) return;
+      _focus.requestFocus();
+    });
+    // start on the requested item, or the first enabled button
     final rows = widget.rows();
+    final start = widget.start;
+    if (start != null && start.$1 >= 0 && start.$1 < rows.length) {
+      // column -1: the first enabled item from that row on
+      if (start.$2 >= 0) {
+        _row = start.$1;
+        _col = start.$2.clamp(0, _rowLength(rows[_row]) - 1);
+        _scheduleScroll();
+        return;
+      }
+      for (int r = start.$1; r < rows.length; r++) {
+        final row = rows[r];
+        if (row is TvStepperRow) {
+          _row = r;
+          _scheduleScroll();
+          return;
+        }
+        if (row is TvButtonsRow) {
+          final c = row.items.indexWhere((b) => b.enabled);
+          if (c >= 0) {
+            _row = r;
+            _col = c;
+            _scheduleScroll();
+            return;
+          }
+        }
+      }
+    }
     for (int r = 0; r < rows.length; r++) {
       final row = rows[r];
       if (row is TvStepperRow) {
@@ -173,6 +275,7 @@ class _TvMenuState extends State<TvMenu> {
   void dispose() {
     widget.rebuildOn?.removeListener(_rebuild);
     TvLang.current.removeListener(_rebuild);
+    _refocusTimer?.cancel();
     _focus.dispose();
     super.dispose();
   }
@@ -188,7 +291,8 @@ class _TvMenuState extends State<TvMenu> {
     Navigator.of(context).pop();
   }
 
-  int _rowLength(TvMenuRow row) => row is TvButtonsRow ? row.items.length : 1;
+  int _rowLength(TvMenuRow row) =>
+      row is TvButtonsRow ? (row.items.isEmpty ? 1 : row.items.length) : 1;
 
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
     final k = e.logicalKey;
@@ -218,12 +322,16 @@ class _TvMenuState extends State<TvMenu> {
     final isRepeat = e is KeyRepeatEvent;
     if (k == LogicalKeyboardKey.arrowUp || k == LogicalKeyboardKey.arrowDown) {
       final d = k == LogicalKeyboardKey.arrowUp ? -1 : 1;
-      final next = (_row + d).clamp(0, rows.length - 1);
-      if (next != _row) {
+      var next = _row + d;
+      while (next >= 0 && next < rows.length && !_selectable(rows[next])) {
+        next += d;
+      }
+      if (next >= 0 && next < rows.length && next != _row) {
         setState(() {
           _row = next;
           _col = _col.clamp(0, _rowLength(rows[_row]) - 1);
         });
+        _scheduleScroll();
       }
       return KeyEventResult.handled;
     }
@@ -261,7 +369,7 @@ class _TvMenuState extends State<TvMenu> {
         final b = row.items[_col.clamp(0, row.items.length - 1)];
         if (b.enabled) {
           b.onPressed?.call();
-          if (b.closes) {
+          if (b.closes || (widget.closeWhen?.call() ?? false)) {
             _close();
           } else {
             setState(() {});
@@ -269,7 +377,10 @@ class _TvMenuState extends State<TvMenu> {
         }
       } else if (row is TvStepperRow) {
         // OK on a stepper: move on to the next row
-        if (_row < rows.length - 1) setState(() => _row++);
+        if (_row < rows.length - 1) {
+          setState(() => _row++);
+          _scheduleScroll();
+        }
       }
       return KeyEventResult.handled;
     }
@@ -365,7 +476,11 @@ class _TvMenuState extends State<TvMenu> {
                   children: [
                     _header(),
                     const SizedBox(height: 18),
-                    for (int r = 0; r < rows.length; r++) _buildRow(rows[r], r),
+                    for (int r = 0; r < rows.length; r++)
+                      KeyedSubtree(
+                        key: _rowKeys.putIfAbsent(r, () => GlobalKey()),
+                        child: _buildRow(rows[r], r),
+                      ),
                   ],
                 ),
               ),
@@ -415,16 +530,27 @@ class _TvMenuState extends State<TvMenu> {
     if (row is TvStepperRow) {
       content = _stepper(row, selectedRow);
     } else if (row is TvButtonsRow) {
+      Widget item(int c) {
+        final sel = selectedRow && c == _col;
+        switch (row.style) {
+          case TvRowStyle.icons:
+            return _iconTile(row.items[c], sel);
+          case TvRowStyle.pictures:
+            return _pictureTile(row.items[c], sel);
+          case TvRowStyle.tiles:
+            return _textTile(row.items[c], sel);
+          case TvRowStyle.buttons:
+            return _button(row.items[c], sel);
+        }
+      }
+
       content = Wrap(
         spacing: 12,
         runSpacing: 12,
-        children: [
-          for (int c = 0; c < row.items.length; c++)
-            row.iconGrid
-                ? _iconTile(row.items[c], selectedRow && c == _col)
-                : _button(row.items[c], selectedRow && c == _col),
-        ],
+        children: [for (int c = 0; c < row.items.length; c++) item(c)],
       );
+    } else if (row is TvTextRow) {
+      content = tvText(row.text, TvText.body(20, color: TvColors.muted));
     } else {
       content = const SizedBox();
     }
@@ -501,6 +627,105 @@ class _TvMenuState extends State<TvMenu> {
               child: Icon(Icons.check, color: TvColors.focus, size: 26),
             ),
         ]),
+      ),
+    );
+  }
+
+  BoxDecoration _tileDeco(TvMenuButton b, bool selected) => BoxDecoration(
+        color: b.active ? const Color(0xFF1E3A50) : TvColors.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: selected
+                ? TvColors.focus
+                : (b.active ? const Color(0x994FF2FF) : TvColors.line),
+            width: selected ? 3 : (b.active ? 2 : 1)),
+        boxShadow: selected
+            ? const [BoxShadow(color: Color(0x804FF2FF), blurRadius: 22)]
+            : null,
+      );
+
+  Widget _pictureTile(TvMenuButton b, bool selected) {
+    return Opacity(
+      opacity: b.enabled ? 1 : 0.35,
+      child: Container(
+        width: 170,
+        height: 168,
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+        decoration: _tileDeco(b, selected),
+        child: Column(children: [
+          Expanded(
+            child: Stack(clipBehavior: Clip.none, children: [
+              Center(
+                child: b.icon == null
+                    ? const SizedBox()
+                    : b.coverImage
+                        ? ClipOval(
+                            child: Image.asset(b.icon!,
+                                width: 92,
+                                height: 92,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => const SizedBox()),
+                          )
+                        : Image.asset(b.icon!,
+                            height: 80,
+                            color: b.iconTint,
+                            errorBuilder: (_, _, _) => const SizedBox()),
+              ),
+              if (b.active)
+                const Positioned(
+                  right: 0,
+                  top: -2,
+                  child: Icon(Icons.check_circle, color: TvColors.focus, size: 26),
+                ),
+            ]),
+          ),
+          const SizedBox(height: 6),
+          Text(b.text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TvText.body(19, weight: FontWeight.w600)),
+          if (b.subtitle != null || b.disabledNote != null)
+            Text(b.disabledNote ?? b.subtitle!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TvText.body(15, color: TvColors.muted)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _textTile(TvMenuButton b, bool selected) {
+    return Opacity(
+      opacity: b.enabled ? 1 : 0.4,
+      child: Container(
+        width: 266,
+        height: 92,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: _tileDeco(b, selected),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Text(b.text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TvText.title(28,
+                        color: b.active ? TvColors.focus : TvColors.fg)),
+              ),
+              if (b.active)
+                const Icon(Icons.check_circle, color: TvColors.focus, size: 22),
+            ]),
+            if (b.subtitle != null) ...[
+              const SizedBox(height: 4),
+              Text(b.subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TvText.body(16, color: TvColors.muted)),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -593,7 +818,7 @@ class TvToast {
   static OverlayEntry? _entry;
   static Timer? _timer;
 
-  static void show(BuildContext context, String text) {
+  static void show(BuildContext context, String text, {int seconds = 3}) {
     _timer?.cancel();
     _entry?.remove();
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
@@ -611,14 +836,16 @@ class TvToast {
                 border: Border.all(color: const Color(0x664FF2FF)),
                 boxShadow: const [BoxShadow(color: Color(0xAA000000), blurRadius: 30)],
               ),
-              child: tvText(text, TvText.body(24, weight: FontWeight.w500)),
+              constraints: const BoxConstraints(maxWidth: 1500),
+              child: tvText(text, TvText.body(24, weight: FontWeight.w500),
+                  textAlign: TextAlign.center),
             ),
           ),
         ),
       ),
     );
     overlay.insert(_entry!);
-    _timer = Timer(const Duration(milliseconds: 2600), () {
+    _timer = Timer(Duration(seconds: seconds), () {
       _entry?.remove();
       _entry = null;
     });

@@ -42,9 +42,54 @@ String trStandees(int n) => _hu ? '$n standee' : '$n standee${n == 1 ? '' : 's'}
 String trPlayers(int n) => _hu ? '$n játékos' : '$n player${n == 1 ? '' : 's'}';
 String trCardsLeft(int n) => _hu ? '$n lap van hátra' : '$n cards left';
 String trStandeeNr(int n) => _hu ? '$n-es standee' : 'standee $n';
+String trLeft(int n) => _hu ? 'még $n' : '$n left';
 String trInDeck(int left) => _hu ? '$left lap a pakliban' : '$left in deck';
 
 const Map<String, (String, String)> _strings = {
+  'customScenario': ('Egyéni', 'Custom'),
+  'customScenarioSub': ('üres küldetés', 'empty scenario'),
+  'scenarioLevel': ('Küldetésszint', 'Scenario level'),
+  'difficulty': ('Nehézség', 'Difficulty'),
+  'solo': ('Egyjátékos', 'Solo'),
+  'autoLevel': ('Automatikus szint', 'Automatic level'),
+  'campaign': ('Kampány', 'Campaign'),
+  'scenario': ('Küldetés', 'Scenario'),
+  'scenarioMenu': ('Küldetés és szint', 'Scenario and level'),
+  'currentScenario': ('Jelenleg', 'Current'),
+  'skip': ('Kihagyás', 'Skip'),
+  'done': ('Kész', 'Done'),
+  'placeStandees': ('Tedd fel a táblára', 'Place on the board'),
+  'pickStandees': ('Válaszd ki, melyik számú standee kerül fel', 'Pick the standee numbers to place'),
+  'escortObjective': ('Kísérő és cél', 'Escort and objective'),
+  'edition': ('Kiadás', 'Edition'),
+  'showHiddenClasses': ('Zárt kasztok is', 'Show locked classes'),
+  'alreadyAdded': ('már játékban', 'already in game'),
+  'classes': ('Kasztok', 'Classes'),
+  'addCharacter': ('Karakter hozzáadása', 'Add character'),
+  'addCharacterSub': ('OK a kasztra, utána a szint', 'OK on a class, then pick the level'),
+  'chooseLevel': ('Válassz szintet', 'Choose level'),
+  'removeCharacterQ': ('Eltávolítod a karaktert?', 'Remove the character?'),
+  'remove': ('Eltávolítás', 'Remove'),
+  'showBosses': ('Főellenségek', 'Bosses'),
+  'showSpecial': ('Különleges szörnyek', 'Special monsters'),
+  'asAlly': ('Szövetségesként', 'As ally'),
+  'monsters': ('Szörnyek', 'Monsters'),
+  'addMonster': ('Szörny hozzáadása', 'Add monster'),
+  'addMonsterSub': ('OK a szörnyre, utána a standee-k', 'OK on a monster, then its standees'),
+  'removeMonsterQ': ('Eltávolítod a szörnyet?', 'Remove the monster?'),
+  'deckMenuSub': ('Áldás, átok és −1 lapok a szörnyek paklijában', 'Bless, curse and −1 cards in the monster deck'),
+  'bless': ('Áldás', 'Bless'),
+  'curse': ('Átok', 'Curse'),
+  'minusOnes': ('−1 lapok', '−1 cards'),
+  'btnScenario': ('Küldetés', 'Scenario'),
+  'btnAddChar': ('Karakter', 'Character'),
+  'btnAddMonster': ('Szörny', 'Monster'),
+  'btnDeck': ('Pakli', 'Deck'),
+  'addStandees': ('Standee-k', 'Standees'),
+  'monsterLevel': ('Szörny szintje', 'Monster level'),
+  'removeCharacter': ('Karakter eltávolítása', 'Remove character'),
+  'removeMonster': ('Szörny eltávolítása', 'Remove monster'),
+  'characterLevel': ('Karakter szintje', 'Character level'),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),
@@ -67,8 +112,8 @@ const Map<String, (String, String)> _strings = {
   'notOnBoard': ('Ebben a körben nem aktív', 'Not active this round'),
   'noMonsters': ('Nincs szörny a küldetésben', 'No monsters in the scenario'),
   'emptyList': (
-    'Még nincs karakter és szörny. A ⚙ menüben a klasszikus nézetben adhatod hozzá őket.',
-    'No characters or monsters yet. Add them in the classic view from the ⚙ menu.'
+    'Még nincs karakter és szörny. Lent: Küldetés, + Karakter, + Szörny.',
+    'No characters or monsters yet. Below: Scenario, + Character, + Monster.'
   ),
   'noStandees': ('nincs standee az asztalon', 'no standees on the table'),
   'keyHp': ('életerő −1 / +1', 'health −1 / +1'),
@@ -112,8 +157,8 @@ const Map<String, (String, String)> _strings = {
   'stepperHint': ('◀ ▶ érték · tartva gyorsul', '◀ ▶ value · hold to speed up'),
   'immune': ('immunis', 'immune'),
   'blockedNoChars': (
-    'Előbb adj hozzá karaktert (klasszikus nézet, ⚙ menü).',
-    'Add characters first (classic view, ⚙ menu).'
+    'Előbb adj hozzá karaktert (lent: + Karakter).',
+    'Add characters first (below: + Character).'
   ),
   'blockedInit': (
     'Előbb add meg minden karakter kezdeményezését (OK a karakteren).',

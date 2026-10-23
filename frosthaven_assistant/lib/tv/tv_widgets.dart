@@ -1068,8 +1068,13 @@ class TvFooter extends StatelessWidget {
           _btn(buttons[i], focusIndex == i),
           const SizedBox(width: 14),
         ],
-        const Spacer(),
-        tvText(hint, TvText.body(18, color: TvColors.dim)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: tvText(hint, TvText.body(17, color: TvColors.dim),
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
+        ),
       ]),
     );
   }
