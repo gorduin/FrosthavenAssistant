@@ -250,6 +250,34 @@ Monster? cardMonsterFor(GameState gs, TvTarget? t) {
   return any is Monster ? any : null;
 }
 
+/// Shield and retaliate of a standee type from the monster's stat card,
+/// as (icon, text) pairs: e.g. shield "2", retaliate "2" (+ its range).
+List<(String, String)> defenseBadges(Monster m, MonsterType type) {
+  final attrs = statsFor(m, type)?.attributes ?? const [];
+  final fh = GameMethods.isFrosthavenStyle(m.type) ? '_fh' : '';
+  final out = <(String, String)>[];
+  for (int i = 0; i < attrs.length; i++) {
+    final a = attrs[i].trim();
+    final shield = RegExp(r'^%shield%\s*(\S+)').firstMatch(a);
+    if (shield != null) {
+      out.add(('assets/images/abilities/shield$fh.png', shield.group(1)!));
+      continue;
+    }
+    final ret = RegExp(r'^%retaliate%\s*(\S+)').firstMatch(a);
+    if (ret != null) {
+      out.add(('assets/images/abilities/retaliate$fh.png', ret.group(1)!));
+      // a following "^%range% N" line is the retaliate range
+      if (i + 1 < attrs.length) {
+        final range = RegExp(r'^\^%range%\s*(\S+)').firstMatch(attrs[i + 1].trim());
+        if (range != null) {
+          out.add(('assets/images/abilities/range$fh.png', range.group(1)!));
+        }
+      }
+    }
+  }
+  return out;
+}
+
 /// Whether the monster's drawn ability card may be shown: with the house
 /// rule on, only once its turn has started (current or done).
 bool cardRevealed(GameState gs, Monster m) =>

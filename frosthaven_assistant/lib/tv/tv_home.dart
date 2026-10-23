@@ -659,7 +659,10 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
                   child: Column(children: [
                     TvSelectedPanel(target: selected),
                     const SizedBox(height: 10),
-                    TvAbilityPanel(gs: _gs, monster: cardMonsterFor(_gs, selected)),
+                    TvAbilityPanel(
+                        gs: _gs,
+                        monster: cardMonsterFor(_gs, selected),
+                        compact: selected?.item is Monster),
                     const SizedBox(height: 10),
                     TvModifierPanel(gs: _gs, focused: false),
                   ]),

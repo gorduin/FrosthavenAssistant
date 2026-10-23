@@ -222,12 +222,18 @@ List<TvMenuRow> _monsterTurn(GameState gs, Monster m) {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(trTurnOf(m.type.display), style: TvText.title(52).copyWith(height: 1.25)),
-              const SizedBox(height: 6),
+              const SizedBox(height: 10),
+              TvStatCard(monster: m, scale: 2.6),
+              const SizedBox(height: 14),
               Text(tr('actOrder'), style: TvText.body(20, color: TvColors.muted)),
               const SizedBox(height: 12),
               Wrap(spacing: 10, runSpacing: 10, children: [
                 for (final s in order)
-                  TvStandeeChip(instance: s, ownerId: m.id, selected: false),
+                  TvStandeeChip(
+                      instance: s,
+                      ownerId: m.id,
+                      selected: false,
+                      badges: defenseBadges(m, s.type)),
               ]),
               const SizedBox(height: 22),
               Row(children: [

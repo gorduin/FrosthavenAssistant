@@ -7,6 +7,10 @@ import '../Resource/enums.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
 import 'phone_server.dart';
+import '../Layout/MonsterStatCardWidget/monster_stat_card_view.dart';
+import '../Layout/view_models/monster_stat_card_view_model.dart';
+import '../Resource/settings.dart';
+import '../services/service_locator.dart';
 import 'tv_campaign.dart';
 import 'tv_campaign_menus.dart';
 import 'tv_model.dart';
@@ -609,6 +613,7 @@ class TvListRow extends StatelessWidget {
                         ownerId: m.id,
                         selected:
                             listFocused && selectedKey == '${m.id}|${s.getId()}',
+                        badges: defenseBadges(m, s.type),
                       ),
                   ]),
           ),
@@ -674,12 +679,16 @@ class TvStandeeChip extends StatelessWidget {
     required this.ownerId,
     required this.selected,
     this.summon = false,
+    this.badges = const [],
   });
 
   final MonsterInstance instance;
   final String ownerId;
   final bool selected;
   final bool summon;
+
+  /// Shield / retaliate from the stat card: (icon, value).
+  final List<(String, String)> badges;
 
   @override
   Widget build(BuildContext context) {
@@ -752,6 +761,18 @@ class TvStandeeChip extends StatelessWidget {
                     ]),
                 const SizedBox(height: 6),
                 TvHpBar(hp: hp, max: max, height: 6),
+                if (badges.isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Row(children: [
+                    for (final b in badges) ...[
+                      _img(b.$1, w: 18, h: 18),
+                      const SizedBox(width: 2),
+                      Text(b.$2,
+                          style: TvText.body(15, weight: FontWeight.w700)),
+                      const SizedBox(width: 8),
+                    ],
+                  ]),
+                ],
               ],
             ),
           ),
@@ -863,6 +884,8 @@ class TvSelectedPanel extends StatelessWidget {
         }
       }
     }
+    final statMonster = t != null && t.item is Monster ? t.item as Monster : null;
+    if (statMonster != null) return _monsterPanel(statMonster, title, sub, image);
     return TvPanel(
       title: tr('selected'),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -918,14 +941,71 @@ class TvSelectedPanel extends StatelessWidget {
       ]),
     );
   }
+
+  static const double statScale = 2.3;
+
+  /// Monster selected: a compact header and the monster's stat card
+  /// (base health, move, attack, range, shield, retaliate, immunities).
+  Widget _monsterPanel(Monster m, String title, String sub, String image) {
+    return TvPanel(
+      title: tr('selected'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(color: TvColors.card, shape: BoxShape.circle),
+            clipBehavior: Clip.antiAlias,
+            child: _img(image, fit: BoxFit.cover),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TvText.body(22, weight: FontWeight.w600)),
+              Text(sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TvText.body(16, color: TvColors.muted)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        Center(child: TvStatCard(monster: m, scale: statScale)),
+      ]),
+    );
+  }
+}
+
+/// The original monster stat card graphic (without its touch buttons).
+class TvStatCard extends StatelessWidget {
+  const TvStatCard({super.key, required this.monster, required this.scale});
+  final Monster monster;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return MonsterStatCardView(
+      data: monster,
+      scale: scale,
+      viewModel: MonsterStatCardViewModel(monster),
+      settings: getIt<Settings>(),
+    );
+  }
 }
 
 class TvAbilityPanel extends StatelessWidget {
-  const TvAbilityPanel({super.key, required this.gs, required this.monster});
+  const TvAbilityPanel(
+      {super.key, required this.gs, required this.monster, this.compact = false});
   final GameState gs;
   final Monster? monster;
 
-  static const double _cardScale = 3.3;
+  /// Smaller card (the stat card takes the room above).
+  final bool compact;
+
+  double get _cardScale => compact ? 2.3 : 3.3;
 
   @override
   Widget build(BuildContext context) {
