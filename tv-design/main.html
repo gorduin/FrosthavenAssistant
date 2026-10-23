@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080">
+<title>X-haven TV – fő játékképernyő (előnézet)</title>
+<style>
+  @font-face { font-family: "Pirata"; src: url("../frosthaven_assistant/assets/fonts/PirataOne-Gloomhaven.ttf"); }
+  @font-face { font-family: "Markazi"; src: url("../frosthaven_assistant/assets/fonts/MarkaziText-VariableFont_wght.ttf"); }
+  :root {
+    --bg: #0a1018; --panel: #121b26; --panel2: #182431; --line: rgba(190,215,235,.12);
+    --fg: #e9f1f7; --muted: rgba(233,241,247,.55); --dim: rgba(233,241,247,.32);
+    --focus: #4ff2ff; --hp: #e04e4e; --hpbg: rgba(224,78,78,.18); --elite: #f1c40f; --xp: #9fd6ff;
+    --fire: #ff7a3d; --ice: #8fd8ff; --air: #d9e8ef; --earth: #8bd17c; --light: #ffe68a; --dark: #9b8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--fg);
+    font-family: "SF Pro Display", "Helvetica Neue", Roboto, Arial, sans-serif; }
+  body::before { content: ""; position: absolute; inset: 0; background: url("../frosthaven_assistant/assets/images/bg/dark_bg.png") center/cover; opacity: .18; }
+  body::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 40%, transparent 50%, rgba(0,0,0,.55) 100%); pointer-events: none; }
+  .ic { display: inline-block; vertical-align: middle; }
+  .title { font-family: "Pirata", serif; letter-spacing: .02em; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- felső sáv ---------- */
+  header { position: absolute; left: 0; right: 0; top: 0; height: 116px; padding: 0 56px; display: flex; align-items: center; gap: 40px;
+    background: linear-gradient(180deg, rgba(10,16,24,.95), rgba(10,16,24,.6)); border-bottom: 1px solid var(--line); z-index: 2; }
+  .scen { display: flex; flex-direction: column; gap: 2px; min-width: 520px; }
+  .scen .t { font-family: "Pirata"; font-size: 44px; line-height: 1; }
+  .scen .s { font-size: 20px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .round { display: flex; align-items: baseline; gap: 14px; }
+  .round b { font-family: "Pirata"; font-size: 72px; line-height: 1; }
+  .round span { font-size: 20px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+  .chips { display: flex; gap: 12px; }
+  .chip { height: 44px; padding: 0 16px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px; font-size: 22px; }
+  .chip img { width: 28px; height: 28px; }
+  .elements { margin-left: auto; display: flex; gap: 14px; }
+  .el { width: 74px; height: 74px; border-radius: 14px; position: relative; display: flex; align-items: center; justify-content: center;
+    background: var(--panel2); border: 1px solid var(--line); }
+  .el img { width: 46px; height: 46px; opacity: .3; filter: grayscale(1); }
+  .el.full img, .el.wane img { opacity: 1; filter: none; }
+  .el.full { box-shadow: 0 0 0 2px var(--c), 0 0 28px color-mix(in srgb, var(--c) 60%, transparent); }
+  .el.wane { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 55%, transparent); }
+  .el.wane::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 7px; height: 4px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--c) 50%, rgba(255,255,255,.12) 50%); }
+  .el.full::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 7px; height: 4px; border-radius: 2px; background: var(--c); }
+  .sys { display: flex; gap: 12px; }
+  .sys .btn { width: 56px; height: 56px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 26px; }
+
+  /* ---------- lista ---------- */
+  main { position: absolute; left: 56px; top: 140px; width: 1150px; bottom: 112px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .row { position: relative; display: flex; align-items: stretch; gap: 0; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); min-height: 112px; }
+  .row.active { background: var(--panel2); border-color: rgba(79,242,255,.35); }
+  .row.active::before { content: ""; position: absolute; left: -1px; top: 14px; bottom: 14px; width: 6px; border-radius: 3px; background: var(--focus); }
+  .row.done { opacity: .55; }
+  .init { width: 118px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid var(--line); }
+  .init b { font-family: "Pirata"; font-size: 54px; line-height: 1; }
+  .init small { font-size: 13px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; margin-top: 4px; }
+  .who { width: 310px; display: flex; align-items: center; gap: 16px; padding: 0 18px; }
+  .who .av { width: 76px; height: 76px; border-radius: 50%; background: #0b141d; border: 2px solid rgba(255,255,255,.14); display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none; }
+  .who .av img { width: 60px; height: 60px; object-fit: contain; }
+  .who .av.m img { width: 100%; height: 100%; object-fit: cover; }
+  .who .n { font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .who .m2 { font-size: 17px; color: var(--muted); margin-top: 4px; }
+  .stats { flex: 1; display: flex; align-items: center; gap: 22px; padding: 0 22px; }
+  .hp { display: flex; flex-direction: column; gap: 8px; width: 220px; }
+  .hp .v { display: flex; align-items: baseline; gap: 8px; }
+  .hp .v b { font-size: 34px; font-weight: 700; }
+  .hp .v span { font-size: 18px; color: var(--muted); }
+  .bar { height: 10px; border-radius: 5px; background: var(--hpbg); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, #ff6b6b, var(--hp)); border-radius: 5px; }
+  .xp { display: flex; align-items: center; gap: 8px; font-size: 24px; color: var(--xp); }
+  .xp img { width: 30px; height: 30px; }
+  .cond { display: flex; gap: 6px; }
+  .cond img { width: 36px; height: 36px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+  .cond .n { position: relative; }
+  .cond .n::after { content: attr(data-n); position: absolute; right: -6px; bottom: -6px; font-size: 14px; font-weight: 700; background: #000; border-radius: 10px; padding: 1px 6px; }
+  /* szörnycsoport: standee-k */
+  .standees { flex: 1; display: flex; align-items: center; gap: 10px; padding: 12px 14px; flex-wrap: wrap; }
+  .st { width: 136px; height: 84px; border-radius: 12px; background: #0b141d; border: 1px solid var(--line); position: relative; padding: 8px 10px 8px 46px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .st .no { position: absolute; left: 8px; top: 50%; margin-top: -16px; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; background: #e9f1f7; color: #0a1018; }
+  .st.elite .no { background: var(--elite); }
+  .st.elite { border-color: rgba(241,196,15,.45); }
+  .st .h { font-size: 22px; font-weight: 700; }
+  .st .h span { font-size: 15px; color: var(--muted); font-weight: 400; }
+  .st .bar { height: 6px; }
+  .st .c { position: absolute; right: 8px; top: 6px; display: flex; gap: 2px; }
+  .st .c img { width: 22px; height: 22px; }
+  .st.focus { box-shadow: 0 0 0 3px var(--focus), 0 0 24px rgba(79,242,255,.5); border-color: transparent; }
+  .st.dead { opacity: .35; }
+  .abil { width: 236px; border-left: 1px solid var(--line); padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .abil .ai { display: flex; align-items: baseline; gap: 8px; }
+  .abil .ai b { font-family: "Pirata"; font-size: 34px; }
+  .abil .ai span { font-size: 14px; color: var(--dim); text-transform: uppercase; letter-spacing: .14em; }
+  .abil .ln { font-size: 18px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .abil .ln img { width: 20px; height: 20px; }
+
+  /* ---------- jobb panel ---------- */
+  aside { position: absolute; left: 1250px; right: 56px; top: 140px; bottom: 112px; display: flex; flex-direction: column; gap: 10px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; }
+  .panel h3 { font-size: 14px; letter-spacing: .2em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+  .card { background: #0b141d; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .card .hd { display: flex; align-items: baseline; justify-content: space-between; }
+  .card .hd b { font-family: "Pirata"; font-size: 30px; }
+  .card .hd .i { font-family: "Pirata"; font-size: 48px; color: var(--focus); }
+  .card .lines { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .card .l { display: flex; align-items: center; gap: 10px; font-size: 24px; }
+  .card .l img { width: 30px; height: 30px; }
+  .card .l .pm { color: var(--muted); font-size: 20px; }
+  .card .foot { margin-top: 12px; display: flex; justify-content: space-between; font-size: 15px; color: var(--dim); letter-spacing: .12em; text-transform: uppercase; }
+  .mod { display: flex; gap: 18px; align-items: center; }
+  .mcard { width: 124px; height: 86px; border-radius: 12px; border: 2px solid rgba(255,255,255,.18); background: linear-gradient(160deg, #1b2a3a, #0e1620); display: flex; align-items: center; justify-content: center; font-family: "Pirata"; font-size: 48px; }
+  .mcard.crit { border-color: var(--elite); color: var(--elite); }
+  .mcard.sm { width: 64px; height: 46px; font-size: 24px; border-width: 1px; opacity: .6; }
+  .mod .rest { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .mod .cnt { font-size: 22px; }
+  .mod .cnt b { font-size: 30px; }
+  .mod .discards { display: flex; gap: 6px; align-items: center; }
+  .btn { height: 52px; padding: 0 22px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); display: inline-flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600; }
+  .btn.primary { background: var(--focus); color: #06202a; border-color: transparent; }
+  .figure { display: flex; gap: 16px; align-items: center; }
+  .figure .big { width: 96px; height: 96px; border-radius: 16px; overflow: hidden; border: 2px solid rgba(255,255,255,.14); flex: none; }
+  .figure .big img { width: 100%; height: 100%; object-fit: cover; }
+  .figure .t { font-size: 26px; font-weight: 600; }
+  .figure .d { font-size: 18px; color: var(--muted); margin-top: 2px; }
+  .keys { margin-top: 12px; display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; font-size: 17px; color: var(--muted); }
+  .keys kbd { font-family: inherit; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 10px; color: var(--fg); font-size: 16px; }
+
+  /* ---------- alsó sáv ---------- */
+  footer { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; padding: 0 56px; display: flex; align-items: center; gap: 14px;
+    background: linear-gradient(0deg, rgba(10,16,24,.97), rgba(10,16,24,.7)); border-top: 1px solid var(--line); }
+  footer .sp { flex: 1; }
+  footer .hint { font-size: 18px; color: var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <div class="scen">
+    <div class="t">Algox-őrjárat</div>
+    <div class="s">Frosthaven · 3. küldetés · 4 játékos</div>
+  </div>
+  <div class="round"><b class="num">4</b><span>kör</span></div>
+  <div class="chips">
+    <div class="chip"><img src="../frosthaven_assistant/assets/images/psd/level.png"> Szint 3</div>
+    <div class="chip">Nehézség +1</div>
+  </div>
+  <div class="elements">
+    <div class="el full" style="--c:var(--fire)"><img src="../frosthaven_assistant/assets/images/psd/element-fire.png"></div>
+    <div class="el wane" style="--c:var(--ice)"><img src="../frosthaven_assistant/assets/images/psd/element-ice.png"></div>
+    <div class="el" style="--c:var(--air)"><img src="../frosthaven_assistant/assets/images/psd/element-air.png"></div>
+    <div class="el" style="--c:var(--earth)"><img src="../frosthaven_assistant/assets/images/psd/element-earth.png"></div>
+    <div class="el wane" style="--c:var(--light)"><img src="../frosthaven_assistant/assets/images/psd/element-light.png"></div>
+    <div class="el" style="--c:var(--dark)"><img src="../frosthaven_assistant/assets/images/psd/element-dark.png"></div>
+  </div>
+  <div class="sys"><div class="btn">↶</div><div class="btn">⚙</div></div>
+</header>
+
+<main>
+  <div class="row done">
+    <div class="init"><b class="num">12</b><small>kezd.</small></div>
+    <div class="who"><div class="av"><img src="../frosthaven_assistant/assets/images/class-icons/Blinkblade.png"></div><div><div class="n">Blinkblade</div><div class="m2">Hunor · 3. szint</div></div></div>
+    <div class="stats">
+      <div class="hp"><div class="v"><b class="num">9</b><span>/ 12</span></div><div class="bar"><i style="width:75%"></i></div></div>
+      <div class="xp"><img src="../frosthaven_assistant/assets/images/psd/xp.png"> 14</div>
+      <div class="cond"><img src="../frosthaven_assistant/assets/images/abilities/strengthen.png"></div>
+    </div>
+  </div>
+
+  <div class="row active">
+    <div class="init"><b class="num">24</b><small>kezd.</small></div>
+    <div class="who"><div class="av m"><img src="../frosthaven_assistant/assets/images/monsters/Algox Guard.png"></div><div><div class="n">Algox Guard</div><div class="m2">3. szint · 3 standee</div></div></div>
+    <div class="standees">
+      <div class="st elite"><div class="no">1</div><div class="h num">14 <span>/ 18</span></div><div class="bar"><i style="width:78%"></i></div><div class="c"><img src="../frosthaven_assistant/assets/images/abilities/wound.png"></div></div>
+      <div class="st focus"><div class="no">3</div><div class="h num">6 <span>/ 11</span></div><div class="bar"><i style="width:55%"></i></div><div class="c"><img src="../frosthaven_assistant/assets/images/abilities/poison.png"><img src="../frosthaven_assistant/assets/images/abilities/muddle.png"></div></div>
+      <div class="st"><div class="no">5</div><div class="h num">11 <span>/ 11</span></div><div class="bar"><i style="width:100%"></i></div></div>
+    </div>
+    <div class="abil">
+      <div class="ai"><b class="num">24</b><span>képesség</span></div>
+      <div class="ln"><img src="../frosthaven_assistant/assets/images/abilities/move.png"> Mozgás 2 · <img src="../frosthaven_assistant/assets/images/abilities/attack.png"> Támadás 3</div>
+      <div class="ln"><img src="../frosthaven_assistant/assets/images/abilities/shield.png"> Pajzs 1</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="init"><b class="num">31</b><small>kezd.</small></div>
+    <div class="who"><div class="av"><img src="../frosthaven_assistant/assets/images/class-icons/Banner Spear.png"></div><div><div class="n">Banner Spear</div><div class="m2">Réka · 2. szint</div></div></div>
+    <div class="stats">
+      <div class="hp"><div class="v"><b class="num">10</b><span>/ 14</span></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="xp"><img src="../frosthaven_assistant/assets/images/psd/xp.png"> 9</div>
+      <div class="cond"><span class="n" data-n="2"><img src="../frosthaven_assistant/assets/images/abilities/poison.png"></span></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="init"><b class="num">57</b><small>kezd.</small></div>
+    <div class="who"><div class="av m"><img src="../frosthaven_assistant/assets/images/monsters/Algox Archer.png"></div><div><div class="n">Algox Archer</div><div class="m2">3. szint · 2 standee</div></div></div>
+    <div class="standees">
+      <div class="st"><div class="no">2</div><div class="h num">7 <span>/ 7</span></div><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="st dead"><div class="no">4</div><div class="h num">0 <span>/ 7</span></div><div class="bar"><i style="width:0"></i></div></div>
+    </div>
+    <div class="abil">
+      <div class="ai"><b class="num">57</b><span>képesség</span></div>
+      <div class="ln"><img src="../frosthaven_assistant/assets/images/abilities/range.png"> Lövés 3, táv 4</div>
+      <div class="ln"><img src="../frosthaven_assistant/assets/images/abilities/move.png"> Mozgás 1</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="init"><b class="num">78</b><small>kezd.</small></div>
+    <div class="who"><div class="av"><img src="../frosthaven_assistant/assets/images/class-icons/Deathwalker.png"></div><div><div class="n">Deathwalker</div><div class="m2">Bálint · 3. szint</div></div></div>
+    <div class="stats">
+      <div class="hp"><div class="v"><b class="num">6</b><span>/ 10</span></div><div class="bar"><i style="width:60%"></i></div></div>
+      <div class="xp"><img src="../frosthaven_assistant/assets/images/psd/xp.png"> 21</div>
+      <div class="cond"><img src="../frosthaven_assistant/assets/images/abilities/wound.png"><img src="../frosthaven_assistant/assets/images/abilities/disarm.png"></div>
+    </div>
+  </div>
+</main>
+
+<aside>
+  <div class="panel">
+    <h3>Kijelölve</h3>
+    <div class="figure">
+      <div class="big"><img src="../frosthaven_assistant/assets/images/monsters/Algox Guard.png"></div>
+      <div><div class="t">Algox Guard · 3-as standee</div><div class="d">Normál · ÉP 6 / 11 · mérgezett, zavart</div></div>
+    </div>
+    <div class="keys">
+      <kbd>◀ ▶</kbd><span>életerő −1 / +1</span>
+      <kbd>OK</kbd><span>állapotok és műveletek · hosszan: átrendezés</span>
+      <kbd>▲ ▼</kbd><span>következő figura</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Algox Guard · képességkártya</h3>
+    <div class="card">
+      <div class="hd"><b>Jeges roham</b><span class="i num">24</span></div>
+      <div class="lines">
+        <div class="l"><img src="../frosthaven_assistant/assets/images/abilities/move.png"> Mozgás <b>2</b></div>
+        <div class="l"><img src="../frosthaven_assistant/assets/images/abilities/attack.png"> Támadás <b>3</b> <span class="pm">+1 ha a célpont fagyott</span></div>
+        <div class="l"><img src="../frosthaven_assistant/assets/images/abilities/shield.png"> Pajzs <b>1</b></div>
+        <div class="l"><img src="../frosthaven_assistant/assets/images/abilities/ice.png"> Jég keletkezik</div>
+      </div>
+      <div class="foot"><span>7 / 8 a pakliban</span><span>keverés</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Szörny módosító pakli</h3>
+    <div class="mod">
+      <div class="mcard crit">×2</div>
+      <div class="rest">
+        <div class="cnt"><b class="num">17</b> lap van hátra</div>
+        <div class="discards"><div class="mcard sm">+1</div><div class="mcard sm">0</div><div class="mcard sm">−1</div><span style="color:var(--dim);font-size:16px">eldobott</span></div>
+        <div class="btn">Húzás</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<footer>
+  <div class="btn primary">Kör vége</div>
+  <div class="btn">+ Szörny</div>
+  <div class="btn">+ Karakter</div>
+  <div class="btn">Zsákmány</div>
+  <div class="sp"></div>
+  <div class="hint">◀ ▶ életerő · OK menü · OK hosszan átrendez · Vissza: kilépés megerősítéssel</div>
+</footer>
+</body>
+</html>
