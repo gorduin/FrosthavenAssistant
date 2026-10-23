@@ -69,6 +69,7 @@ dependencies:
   format: ^1.4.0
   frosthaven_assistant_server:
     path: ../frosthaven_assistant_server
+  qr_flutter: ^4.1.0
 
 
 

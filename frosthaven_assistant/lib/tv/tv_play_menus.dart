@@ -15,6 +15,9 @@ import '../Resource/stat_calculator.dart';
 import '../Resource/state/game_state.dart';
 import '../services/network/network.dart';
 import '../services/service_locator.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
+import 'phone_server.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
 import 'tv_strings.dart';
@@ -316,6 +319,8 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
 
   final rebuild = Listenable.merge([
     TvLang.current,
+    PhoneServer.running,
+    PhoneServer.clients,
     settings.server,
     network.networkInfo.wifiIPv6,
     for (final t in toggles) t.notifier,
@@ -353,6 +358,21 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
       ], 3, label: tr('rules')),
       TvButtonsRow([
         TvMenuButton(
+          text: PhoneServer.running.value ? tr('phonesOn') : tr('phonesOff'),
+          active: PhoneServer.running.value,
+          onPressed: () => PhoneServer.setEnabled(!PhoneServer.running.value),
+        ),
+        if (PhoneServer.running.value)
+          TvMenuButton(
+            text: tr('showQr'),
+            primary: true,
+            onPressed: () => showPhoneQr(context),
+          ),
+      ], label: tr('phones')),
+      if (PhoneServer.running.value)
+        TvTextRow('${PhoneServer.url.value} · ${trPhones(PhoneServer.clients.value)}'),
+      TvButtonsRow([
+        TvMenuButton(
           text: serverOn ? tr('stopServer') : tr('startServer'),
           active: serverOn,
           onPressed: () {
@@ -382,5 +402,55 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
     rows: rows,
     rebuildOn: rebuild,
     width: 1180,
+  );
+}
+
+
+// ======================================================================
+// Phone companion QR code
+// ======================================================================
+
+Future<void> showPhoneQr(BuildContext context) async {
+  if (!PhoneServer.running.value) await PhoneServer.setEnabled(true);
+  if (!context.mounted) return;
+  return showTvMenu<void>(
+    context,
+    title: tr('phones'),
+    subtitle: tr('qrSub'),
+    width: 1100,
+    rebuildOn: Listenable.merge([PhoneServer.clients, PhoneServer.url]),
+    rows: () => [
+      TvWidgetRow(() => Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(18)),
+              child: QrImageView(
+                data: PhoneServer.url.value,
+                size: 380,
+                backgroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 36),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(tr('qrStep1'), style: TvText.body(24)),
+                const SizedBox(height: 14),
+                Text(tr('qrStep2'), style: TvText.body(24)),
+                const SizedBox(height: 14),
+                Text(tr('qrStep3'), style: TvText.body(24)),
+                const SizedBox(height: 26),
+                Text(PhoneServer.url.value,
+                    style: TvText.body(20, color: TvColors.focus)),
+                const SizedBox(height: 10),
+                Text(trPhones(PhoneServer.clients.value),
+                    style: TvText.body(22, color: TvColors.muted)),
+              ]),
+            ),
+          ])),
+      TvButtonsRow([
+        TvMenuButton(text: tr('close'), primary: true, closes: true, onPressed: () {}),
+      ]),
+    ],
   );
 }

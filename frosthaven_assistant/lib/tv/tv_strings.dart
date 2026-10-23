@@ -58,6 +58,7 @@ String trAddedToGame(int n) =>
 String trSavedToParty(int n) => _hu
     ? 'Csapat mentve ($n új tag)'
     : 'Party saved ($n new member${n == 1 ? '' : 's'})';
+String trPhones(int n) => _hu ? '$n telefon csatlakozva' : '$n phone${n == 1 ? '' : 's'} connected';
 String trLeft(int n) => _hu ? 'még $n' : '$n left';
 String trInDeck(int left) => _hu ? '$left lap a pakliban' : '$left in deck';
 
@@ -188,6 +189,17 @@ const Map<String, (String, String)> _strings = {
     '“Scenario completed” also credits XP. After a lost scenario use “Credit scenario XP”.'
   ),
   'removeFromParty': ('Eltávolítás a csapatból', 'Remove from party'),
+  'phones': ('Telefonok', 'Phones'),
+  'phonesOn': ('Telefonos kapcsolat be', 'Phone access on'),
+  'phonesOff': ('Telefonos kapcsolat ki', 'Phone access off'),
+  'showQr': ('QR-kód megjelenítése', 'Show QR code'),
+  'qrSub': (
+    'Mindenki a saját karakterét kezelheti a telefonján, telepítés nélkül',
+    'Everyone can manage their own character on their phone, no install'
+  ),
+  'qrStep1': ('1. Csatlakozz ugyanarra a wifire.', '1. Join the same Wi-Fi.'),
+  'qrStep2': ('2. Nyisd meg a Kamerát, és irányítsd a kódra.', '2. Open the Camera and point it at the code.'),
+  'qrStep3': ('3. Koppints a linkre, és válaszd ki a karaktered.', '3. Tap the link and pick your character.'),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),

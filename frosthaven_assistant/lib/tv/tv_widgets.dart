@@ -6,6 +6,7 @@ import '../Resource/app_constants.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
+import 'phone_server.dart';
 import 'tv_campaign.dart';
 import 'tv_model.dart';
 import 'tv_strings.dart';
@@ -133,6 +134,20 @@ class TvHeader extends StatelessWidget {
               style: TvText.body(20,
                   color: playing ? TvColors.muted : TvColors.focus)),
         ),
+        if (PhoneServer.running.value) ...[
+          const SizedBox(width: 12),
+          _chip(
+            child: Row(children: [
+              Icon(Icons.smartphone,
+                  size: 24,
+                  color: PhoneServer.clients.value > 0
+                      ? TvColors.focus
+                      : TvColors.muted),
+              const SizedBox(width: 6),
+              Text('${PhoneServer.clients.value}', style: TvText.body(22)),
+            ]),
+          ),
+        ],
         const Spacer(),
         for (final e in Elements.values) ...[
           TvElementTile(
