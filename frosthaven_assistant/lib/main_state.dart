@@ -19,6 +19,7 @@ import 'package:window_manager/window_manager.dart';
 import 'Layout/main_scaffold.dart';
 import 'Model/campaign.dart';
 import 'main.dart';
+import 'tv/tv_home.dart';
 
 class DataLoadedNotification extends Notification {
   // ignore: prefer-match-file-name, companion type for MainState in same file
@@ -36,7 +37,7 @@ class MainState extends State<MyHomePage>
   @override
   void dispose() {
     _settings.powerMode.removeListener(_applyWakelock);
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       _settings.server.removeListener(_onServerChanged);
     }
     if (!kIsWeb &&
@@ -155,7 +156,7 @@ class MainState extends State<MyHomePage>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       _settings.server.addListener(_onServerChanged);
     }
 
@@ -167,7 +168,7 @@ class MainState extends State<MyHomePage>
     _applyWakelock();
     _settings.powerMode.addListener(_applyWakelock);
 
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       KeyboardVisibilityController().onChange.listen((bool visible) {
         if (kDebugMode) {
           print("keyboard visible $visible");
@@ -181,7 +182,28 @@ class MainState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
-    return const OverrideTextScaleFactor(child: MainScaffold());
+    // gorduin/tv: the TV UI is the default; the original UI stays reachable
+    // from the TV settings menu ("classic view"), Back returns from it.
+    return ValueListenableBuilder<bool>(
+      valueListenable: tvClassicView,
+      builder: (context, classic, _) {
+        if (classic) {
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) {
+              if (!didPop) tvClassicView.value = false;
+            },
+            child: const OverrideTextScaleFactor(child: MainScaffold()),
+          );
+        }
+        return ValueListenableBuilder<bool>(
+          valueListenable: loading,
+          builder: (context, isLoading, _) => isLoading
+              ? const ColoredBox(color: Color(0xFF0A1018))
+              : const TvHomeScreen(),
+        );
+      },
+    );
   }
 
   @override
