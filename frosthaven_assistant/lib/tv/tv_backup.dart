@@ -41,6 +41,8 @@ class TvBackup {
     } catch (_) {}
     _watching = Listenable.merge([gs.round, gs.scenario, TvCampaigns.version]);
     _watching!.addListener(_schedule);
+    // one backup shortly after the app starts (the state as it was left)
+    Timer(const Duration(seconds: 20), () => backupNow('start'));
     // retry while the last attempt failed (e.g. no network)
     Timer.periodic(const Duration(minutes: 10), (_) {
       if (lastError.value.isNotEmpty) backupNow('retry');
