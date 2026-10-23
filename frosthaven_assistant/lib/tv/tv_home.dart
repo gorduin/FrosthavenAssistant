@@ -7,7 +7,6 @@ import '../Resource/commands/change_stat_commands/change_health_command.dart';
 import '../Resource/commands/draw_modifier_card_command.dart';
 import '../Resource/commands/imbue_element_command.dart';
 import '../Resource/commands/reorder_list_command.dart';
-import '../Resource/commands/turn_done_command.dart';
 import '../Resource/commands/use_element_command.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_actions.dart';
@@ -19,6 +18,7 @@ import 'tv_figure_menu.dart';
 import 'tv_menu.dart';
 import 'phone_server.dart';
 import 'tv_campaign.dart';
+import 'tv_combat.dart';
 import 'tv_prefs.dart';
 import 'tv_model.dart';
 import 'tv_play_menus.dart';
@@ -217,6 +217,12 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
       return;
     }
     runDrawOrNextRoundAction(_gs);
+    // guided combat starts right after the draw
+    if (isDraw && _gs.roundState.value == RoundState.playTurns) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_menuOpen) _openCombat();
+      });
+    }
   }
 
   String _turnName(ListItemData item) {
@@ -225,13 +231,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     return item.id;
   }
 
-  /// Ends the turn of whoever is current; the next one becomes current (and
-  /// a monster's hidden ability card is revealed).
-  void _endCurrentTurn() {
-    final cur = currentTurnItem(_gs);
-    if (cur == null) return;
-    _gs.action(TurnDoneCommand(cur.id, gameState: _gs));
-  }
+  void _openCombat() => _openMenu(() => showCombatGuide(context, _gs));
 
   void _drawModifier() {
     _gs.action(DrawModifierCardCommand('', gameState: _gs));
@@ -504,18 +504,22 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
   List<(TvFooterButton, VoidCallback)> _footer() {
     final isDraw = _gs.roundState.value == RoundState.chooseInitiative;
     return [
+      if (!isDraw)
+        (
+          TvFooterButton(
+              currentTurnItem(_gs) == null
+                  ? tr('combatBtn')
+                  : '${tr('combatBtn')} · ${trTurnOf(_turnName(currentTurnItem(_gs)!))}',
+              primary: true,
+              icon: Icons.sports_martial_arts),
+          _openCombat
+        ),
       (
         TvFooterButton(isDraw ? tr('draw') : tr('nextRound'),
-            primary: isDraw || currentTurnItem(_gs) == null,
+            primary: isDraw,
             icon: isDraw ? Icons.style : Icons.skip_next),
         _drawOrNextRound
       ),
-      if (!isDraw && currentTurnItem(_gs) != null)
-        (
-          TvFooterButton('${tr('next')}: ${_turnName(currentTurnItem(_gs)!)}',
-              primary: true, icon: Icons.arrow_forward),
-          _endCurrentTurn
-        ),
       (TvFooterButton(tr('drawModifier'), icon: Icons.layers), _drawModifier),
       if (hasLootDeck(_gs))
         (

@@ -62,6 +62,8 @@ String trPhones(int n) => _hu ? '$n telefon csatlakozva' : '$n phone${n == 1 ? '
 String trLoadedParty(int added, int updated) => _hu
     ? '$added új karakter, $updated frissítve (szint, név)'
     : '$added added, $updated updated (level, name)';
+String trTurnOf(String name) => _hu ? '$name jön' : '$name\'s turn';
+String trRoundOver(int round) => _hu ? 'A $round. kör véget ért' : 'Round $round is over';
 String trLeft(int n) => _hu ? 'még $n' : '$n left';
 String trInDeck(int left) => _hu ? '$left lap a pakliban' : '$left in deck';
 
@@ -219,6 +221,14 @@ const Map<String, (String, String)> _strings = {
   'cardHiddenLong': ('A kártya a szörny körében látszik', 'The card is shown on the monster\'s turn'),
   'next': ('Tovább', 'Next'),
   'setHideMonsterCards': ('Szörnykártya a körükig rejtve', 'Monster cards hidden until their turn'),
+  'combat': ('Harc', 'Combat'),
+  'combatNotStarted': ('Előbb a húzás: add meg a kezdeményezéseket, és húzz.', 'Draw first: set the initiatives and draw.'),
+  'combatDone': ('Kész', 'Done'),
+  'combatDoneLast': ('Kész · ez volt az utolsó', 'Done · that was the last one'),
+  'backToList': ('Vissza a listához', 'Back to the list'),
+  'actOrder': ('Ebben a sorrendben lépnek (előbb az elitek):', 'They act in this order (elites first):'),
+  'roundOverSub': ('Jöhet a következő kör: kezdeményezések, aztán húzás.', 'Next round: initiatives, then draw.'),
+  'combatBtn': ('Harc', 'Combat'),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),
