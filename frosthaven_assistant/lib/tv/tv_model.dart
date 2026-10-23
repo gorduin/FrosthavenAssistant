@@ -250,6 +250,17 @@ Monster? cardMonsterFor(GameState gs, TvTarget? t) {
   return any is Monster ? any : null;
 }
 
+/// Whether the monster's drawn ability card may be shown: with the house
+/// rule on, only once its turn has started (current or done).
+bool cardRevealed(GameState gs, Monster m) =>
+    !TvPrefs.hideMonsterCards.value ||
+    gs.roundState.value != RoundState.playTurns ||
+    m.turnState.value != TurnsState.notDone;
+
+/// The figure whose turn it is (list item), if any.
+ListItemData? currentTurnItem(GameState gs) => gs.currentList
+    .firstWhereOrNull((e) => e.turnState.value == TurnsState.current);
+
 /// Monsters without standees on the table are hidden (they belong to later
 /// rooms) unless the TV preference shows them.
 bool monsterVisible(Monster m) =>

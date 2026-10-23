@@ -323,6 +323,7 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
     PhoneServer.running,
     PhoneServer.clients,
     TvPrefs.hideEmptyMonsters,
+    TvPrefs.hideMonsterCards,
     settings.server,
     network.networkInfo.wifiIPv6,
     for (final t in toggles) t.notifier,
@@ -348,6 +349,12 @@ Future<void> showTvSettings(BuildContext context, GameState gs,
         TvMenuButton(text: tr('redo'), onPressed: () => gs.redo()),
       ], label: tr('actions')),
       ...tvGrid([
+        TvMenuButton(
+          text: tr('setHideMonsterCards'),
+          active: TvPrefs.hideMonsterCards.value,
+          onPressed: () =>
+              TvPrefs.setHideMonsterCards(!TvPrefs.hideMonsterCards.value),
+        ),
         TvMenuButton(
           text: tr('setHideEmptyMonsters'),
           active: TvPrefs.hideEmptyMonsters.value,

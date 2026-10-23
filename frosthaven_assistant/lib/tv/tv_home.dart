@@ -7,6 +7,7 @@ import '../Resource/commands/change_stat_commands/change_health_command.dart';
 import '../Resource/commands/draw_modifier_card_command.dart';
 import '../Resource/commands/imbue_element_command.dart';
 import '../Resource/commands/reorder_list_command.dart';
+import '../Resource/commands/turn_done_command.dart';
 import '../Resource/commands/use_element_command.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_actions.dart';
@@ -76,6 +77,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     TvLang.current,
     TvCampaigns.version,
     TvPrefs.hideEmptyMonsters,
+    TvPrefs.hideMonsterCards,
     PhoneServer.running,
     PhoneServer.clients,
   ]);
@@ -215,6 +217,20 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
       return;
     }
     runDrawOrNextRoundAction(_gs);
+  }
+
+  String _turnName(ListItemData item) {
+    if (item is Character) return item.characterState.display.value;
+    if (item is Monster) return item.type.display;
+    return item.id;
+  }
+
+  /// Ends the turn of whoever is current; the next one becomes current (and
+  /// a monster's hidden ability card is revealed).
+  void _endCurrentTurn() {
+    final cur = currentTurnItem(_gs);
+    if (cur == null) return;
+    _gs.action(TurnDoneCommand(cur.id, gameState: _gs));
   }
 
   void _drawModifier() {
@@ -490,9 +506,16 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     return [
       (
         TvFooterButton(isDraw ? tr('draw') : tr('nextRound'),
-            primary: true, icon: isDraw ? Icons.style : Icons.skip_next),
+            primary: isDraw || currentTurnItem(_gs) == null,
+            icon: isDraw ? Icons.style : Icons.skip_next),
         _drawOrNextRound
       ),
+      if (!isDraw && currentTurnItem(_gs) != null)
+        (
+          TvFooterButton('${tr('next')}: ${_turnName(currentTurnItem(_gs)!)}',
+              primary: true, icon: Icons.arrow_forward),
+          _endCurrentTurn
+        ),
       (TvFooterButton(tr('drawModifier'), icon: Icons.layers), _drawModifier),
       if (hasLootDeck(_gs))
         (

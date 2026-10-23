@@ -626,6 +626,7 @@ class TvListRow extends StatelessWidget {
         deck != null &&
         deck.discardPileIsNotEmpty;
     final card = showFront ? deck.discardPileTop : null;
+    final hidden = card != null && !cardRevealed(gs, m);
     return Container(
       width: 220,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -637,7 +638,16 @@ class TvListRow extends StatelessWidget {
         children: [
           Text(tr('abilityCard').toUpperCase(), style: TvText.label(13)),
           const SizedBox(height: 6),
-          if (card != null) ...[
+          if (hidden)
+            Row(children: [
+              const Icon(Icons.visibility_off, size: 20, color: TvColors.dim),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(tr('cardHidden'),
+                    style: TvText.body(17, color: TvColors.muted)),
+              ),
+            ])
+          else if (card != null) ...[
             Text(card.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -941,7 +951,7 @@ class TvAbilityPanel extends StatelessWidget {
         SizedBox(
           height: cardH,
           child: Center(
-            child: showFront
+            child: showFront && cardRevealed(gs, m)
                 ? SizedBox(
                     width: cardW,
                     height: cardH,
@@ -961,8 +971,22 @@ class TvAbilityPanel extends StatelessWidget {
                       border: Border.all(color: TvColors.line),
                     ),
                     alignment: Alignment.center,
-                    child: Text(playing ? tr('notOnBoard') : tr('noCard'),
-                        style: TvText.body(22, color: TvColors.dim)),
+                    child: showFront
+                        ? Column(mainAxisSize: MainAxisSize.min, children: [
+                            Text('${deck.discardPileTop.initiative}',
+                                style: TvText.title(64, color: TvColors.fg)
+                                    .copyWith(height: 1.3)),
+                            const SizedBox(height: 8),
+                            Row(mainAxisSize: MainAxisSize.min, children: [
+                              const Icon(Icons.visibility_off,
+                                  size: 24, color: TvColors.dim),
+                              const SizedBox(width: 10),
+                              Text(tr('cardHiddenLong'),
+                                  style: TvText.body(22, color: TvColors.muted)),
+                            ]),
+                          ])
+                        : Text(playing ? tr('notOnBoard') : tr('noCard'),
+                            style: TvText.body(22, color: TvColors.dim)),
                   ),
           ),
         ),
@@ -971,7 +995,7 @@ class TvAbilityPanel extends StatelessWidget {
           Text(deck == null ? '' : trInDeck(deck.drawPileSize).toUpperCase(),
               style: TvText.label(14)),
           const Spacer(),
-          if (showFront && deck.discardPileTop.shuffle)
+          if (showFront && cardRevealed(gs, m) && deck.discardPileTop.shuffle)
             Text(tr('shuffle').toUpperCase(),
                 style: TvText.label(14, color: TvColors.elite)),
         ]),
