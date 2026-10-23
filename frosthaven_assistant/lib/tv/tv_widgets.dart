@@ -8,6 +8,7 @@ import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
 import 'phone_server.dart';
 import 'tv_campaign.dart';
+import 'tv_campaign_menus.dart';
 import 'tv_model.dart';
 import 'tv_strings.dart';
 import 'tv_theme.dart';
@@ -549,6 +550,9 @@ class TvListRow extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text('${st.xp.value}',
                       style: TvText.body(24, color: TvColors.xp)),
+                  if (campaignXpOf(gs, c) != null)
+                    Text('  (${tr('xpTotal')} ${campaignXpOf(gs, c)})',
+                        style: TvText.body(18, color: TvColors.muted)),
                 ]),
               TvConditionIcons(figure: st),
               for (final s in summons)

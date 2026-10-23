@@ -59,6 +59,9 @@ String trSavedToParty(int n) => _hu
     ? 'Csapat mentve ($n új tag)'
     : 'Party saved ($n new member${n == 1 ? '' : 's'})';
 String trPhones(int n) => _hu ? '$n telefon csatlakozva' : '$n phone${n == 1 ? '' : 's'} connected';
+String trLoadedParty(int added, int updated) => _hu
+    ? '$added új karakter, $updated frissítve (szint, név)'
+    : '$added added, $updated updated (level, name)';
 String trLeft(int n) => _hu ? 'még $n' : '$n left';
 String trInDeck(int left) => _hu ? '$left lap a pakliban' : '$left in deck';
 
@@ -200,6 +203,11 @@ const Map<String, (String, String)> _strings = {
   'qrStep1': ('1. Csatlakozz ugyanarra a wifire.', '1. Join the same Wi-Fi.'),
   'qrStep2': ('2. Nyisd meg a Kamerát, és irányítsd a kódra.', '2. Open the Camera and point it at the code.'),
   'qrStep3': ('3. Koppints a linkre, és válaszd ki a karaktered.', '3. Tap the link and pick your character.'),
+  'newMember': ('Új tag', 'New member'),
+  'partyUpToDate': ('A csapat már megegyezik a játékkal', 'The party already matches the game'),
+  'saveChangesQ': ('Ezek változnak a csapatban:', 'These will change in the party:'),
+  'save': ('Mentés', 'Save'),
+  'xpTotal': ('össz.', 'total'),
   'round': ('kör', 'round'),
   'init': ('kezd.', 'init.'),
   'level': ('Szint', 'Level'),

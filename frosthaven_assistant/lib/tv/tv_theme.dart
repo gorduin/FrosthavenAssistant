@@ -80,6 +80,7 @@ const Map<String, IconData> _glyphIcons = {
   '⟳': Icons.sync,
   '⇅': Icons.swap_vert,
   '✎': Icons.edit_note,
+  '→': Icons.arrow_forward,
 };
 
 /// Text that renders ◀ ▶ ▲ ▼ ⚙ ⟳ ⇅ as Material icons, so it does not depend

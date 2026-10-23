@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../Resource/commands/add_character_command.dart';
+import '../Resource/commands/change_name_command.dart';
 import '../Resource/commands/set_campaign_command.dart';
+import '../Resource/commands/set_character_level_command.dart';
 import '../Resource/game_data.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/settings.dart';
@@ -230,6 +232,24 @@ List<Character> _gamePlayers() => GameMethods.getCurrentCharacters()
     .where((c) => !GameMethods.isObjectiveOrEscort(c.characterClass))
     .toList();
 
+/// What "save from game" would change: new members and level / name
+/// changes of existing ones (the campaign XP total is never touched).
+List<String> partySaveChanges(TvCampaign c) {
+  final out = <String>[];
+  for (final ch in _gamePlayers()) {
+    final m = c.party.where((p) => p.classId == ch.characterClass.id).firstOrNull;
+    final name = ch.characterState.display.value;
+    final level = ch.characterState.level.value;
+    if (m == null) {
+      out.add('${tr('newMember')}: $name (${trLevel(level)})');
+      continue;
+    }
+    if (m.level != level) out.add('${m.name}: ${trLevel(m.level)} → ${trLevel(level)}');
+    if (m.name != name) out.add('${m.name} → $name');
+  }
+  return out;
+}
+
 /// Adds the characters playing now to the party, or updates their name and
 /// level (the campaign XP total is kept).
 int savePartyFromGame(TvCampaign c) {
@@ -254,17 +274,33 @@ int savePartyFromGame(TvCampaign c) {
   return added;
 }
 
-/// Puts the party members who are not in the game yet into it.
-int loadPartyIntoGame(GameState gs, TvCampaign c) {
+/// Puts the party into the game: adds the members who are missing and gives
+/// the ones already playing the party's level and name. XP stays as it is:
+/// the game counts the XP of the current scenario.
+(int, int) loadPartyIntoGame(GameState gs, TvCampaign c) {
   int added = 0;
-  final inGame = _gamePlayers().map((e) => e.characterClass.id).toSet();
+  int updated = 0;
+  final playing = _gamePlayers();
   for (final m in c.party) {
-    if (inGame.contains(m.classId)) continue;
-    final cmd = AddCharacterCommand(m.classId, m.edition, m.name, m.level);
-    gs.action(cmd);
-    if (cmd.character != null) added++;
+    final ch = playing.where((e) => e.characterClass.id == m.classId).firstOrNull;
+    if (ch == null) {
+      final cmd = AddCharacterCommand(m.classId, m.edition, m.name, m.level);
+      gs.action(cmd);
+      if (cmd.character != null) added++;
+      continue;
+    }
+    bool changed = false;
+    if (ch.characterState.level.value != m.level) {
+      gs.action(SetCharacterLevelCommand(m.level, ch.id));
+      changed = true;
+    }
+    if (m.name.isNotEmpty && ch.characterState.display.value != m.name) {
+      gs.action(ChangeNameCommand(m.name, ch.id, gameState: gs));
+      changed = true;
+    }
+    if (changed) updated++;
   }
-  return added;
+  return (added, updated);
 }
 
 /// Adds the XP gained in this scenario to the campaign totals.
@@ -323,16 +359,13 @@ Future<void> showPartyMenu(BuildContext context, GameState gs, TvCampaign c) {
             onPressed: c.party.isEmpty
                 ? null
                 : () {
-                    final n = loadPartyIntoGame(gs, c);
-                    TvToast.show(context, trAddedToGame(n));
+                    final (added, updated) = loadPartyIntoGame(gs, c);
+                    TvToast.show(context, trLoadedParty(added, updated));
                   },
           ),
           TvMenuButton(
             text: tr('saveParty'),
-            onPressed: () {
-              final n = savePartyFromGame(c);
-              TvToast.show(context, trSavedToParty(n));
-            },
+            onPressed: () => confirmSaveParty(context, c),
           ),
           TvMenuButton(
             text: tr('creditXp'),
@@ -400,4 +433,42 @@ Future<void> showMemberMenu(BuildContext context, TvCampaign c, PartyMember m) {
       ]),
     ],
   );
+}
+
+
+/// "Save from game": lists what would change and asks before overwriting.
+Future<void> confirmSaveParty(BuildContext context, TvCampaign c) async {
+  final changes = partySaveChanges(c);
+  if (changes.isEmpty) {
+    TvToast.show(context, tr('partyUpToDate'));
+    return;
+  }
+  return showTvMenu<void>(
+    context,
+    title: tr('saveParty'),
+    subtitle: tr('saveChangesQ'),
+    width: 1000,
+    rows: () => [
+      for (final ch in changes) TvTextRow(ch),
+      TvButtonsRow([
+        TvMenuButton(text: tr('cancel'), closes: true, onPressed: () {}),
+        TvMenuButton(
+          text: tr('save'),
+          primary: true,
+          closes: true,
+          onPressed: () {
+            final n = savePartyFromGame(c);
+            TvToast.show(context, trSavedToParty(n));
+          },
+        ),
+      ]),
+    ],
+  );
+}
+
+/// Campaign XP total of a character, when an active campaign tracks it.
+int? campaignXpOf(GameState gs, Character ch) {
+  final c = campaignFor(gs);
+  if (c == null) return null;
+  return c.party.where((p) => p.classId == ch.characterClass.id).firstOrNull?.xp;
 }
