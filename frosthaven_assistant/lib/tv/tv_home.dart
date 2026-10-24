@@ -305,8 +305,24 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
         ));
   }
 
-  void _openFigureMenu(TvTarget t) {
-    _openMenu(() => showFigureMenu(context, _gs, t));
+  Future<void> _openFigureMenu(TvTarget t) async {
+    final ch = t.isCharacter ? t.item as Character : null;
+    final initBefore = ch?.characterState.initiative.value;
+    await _openMenu(() => showFigureMenu(context, _gs, t));
+    // initiative given: the list re-sorts, so jump on to the next character
+    // still waiting for one instead of following this one to its new place
+    if (ch == null || !mounted) return;
+    if (_gs.roundState.value != RoundState.chooseInitiative) return;
+    final init = ch.characterState.initiative.value;
+    if (init <= 0 || init == initBefore) return;
+    final targets = _targets;
+    final next = targets.indexWhere((x) =>
+        x.isCharacter &&
+        x.item != ch &&
+        (x.figure as CharacterState).initiative.value <= 0 &&
+        (x.figure as CharacterState).health.value > 0 &&
+        !GameMethods.isObjectiveOrEscort((x.item as Character).characterClass));
+    if (next >= 0) _select(targets, next);
   }
 
   // ---------------------------------------------------------------- keys

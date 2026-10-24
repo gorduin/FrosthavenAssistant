@@ -1,3 +1,4 @@
+import '../enums.dart';
 import '../state/game_state.dart';
 import 'command_l10n.dart';
 
@@ -16,6 +17,10 @@ class SetInitCommand extends Command {
       if (item.id == _characterId && item is Character) {
         item.characterState.setInitiative(stateAccess, _init);
       }
+    }
+    if (_gameState.roundState.value == RoundState.chooseInitiative) {
+      RoundMethods.sortCharactersByInitiative(stateAccess,
+          gameState: _gameState);
     }
   }
 

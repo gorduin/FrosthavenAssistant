@@ -35,6 +35,36 @@ class RoundMethods {
     gs._reflowNoteRows();
   }
 
+  /// While initiatives are being chosen: reorders only the characters among
+  /// the places they already hold, by the initiative set so far (characters
+  /// without one, then dead ones, last). Monsters and notes stay put.
+  static void sortCharactersByInitiative(_StateModifier _,
+      {GameState? gameState}) {
+    final gs = gameState ?? getIt<GameState>();
+    final slots = <int>[];
+    final chars = <(int, Character)>[];
+    for (int i = 0; i < gs._currentList.length; i++) {
+      final item = gs._currentList[i];
+      if (item is Character) {
+        slots.add(i);
+        chars.add((i, item));
+      }
+    }
+    int rank(Character c) {
+      if (c.characterState.health.value <= 0) return 1000;
+      final init = c.characterState.initiative.value;
+      return init > 0 ? init : 999;
+    }
+    chars.sort((a, b) {
+      final r = rank(a.$2).compareTo(rank(b.$2));
+      return r != 0 ? r : a.$1.compareTo(b.$1); // keep order on ties
+    });
+    for (int k = 0; k < slots.length; k++) {
+      gs._currentList[slots[k]] = chars[k].$2;
+    }
+    gs._notifyCurrentList();
+  }
+
   static int _compareForCharactersFirst(ListItemData a, ListItemData b) {
     final deadResult = _compareDeadCharacters(a, b);
     if (deadResult != null) return deadResult;
