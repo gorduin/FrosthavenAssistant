@@ -226,6 +226,11 @@ List<Condition> conditionsFor(TvTarget t) {
   return out;
 }
 
+/// Highest health the TV UI lets a figure be raised to: characters may go
+/// above their maximum (e.g. temporary health), monsters and summons may not.
+int hpCeiling(FigureState fig) =>
+    fig is CharacterState ? 99 : fig.maxHealth.value;
+
 bool isRowActive(ListItemData item) =>
     item.turnState.value == TurnsState.current;
 

@@ -82,7 +82,7 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
       out.add(TvStepperRow(
         label: tr('health'),
         min: 0,
-        max: fig.maxHealth.value,
+        max: hpCeiling(fig),
         value: () => fig.health.value,
         format: (v) => '$v / ${fig.maxHealth.value}',
         onChange: (v) {

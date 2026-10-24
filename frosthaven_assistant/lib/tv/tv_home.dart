@@ -206,7 +206,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
     final fig = t.figure;
     if (fig == null) return;
     final hp = fig.health.value;
-    if (delta > 0 && hp >= fig.maxHealth.value) return;
+    if (delta > 0 && hp >= hpCeiling(fig)) return;
     if (delta < 0 && hp <= 0) return;
     _gs.action(ChangeHealthCommand(delta, t.figureId, t.ownerId, gameState: _gs));
   }

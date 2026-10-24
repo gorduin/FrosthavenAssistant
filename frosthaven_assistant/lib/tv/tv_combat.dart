@@ -200,7 +200,7 @@ List<TvMenuRow> _characterEdits(BuildContext context, GameState gs, Character ch
     TvStepperRow(
       label: tr('health'),
       min: 0,
-      max: st.maxHealth.value,
+      max: hpCeiling(st),
       value: () => st.health.value,
       format: (v) => '$v / ${st.maxHealth.value}',
       onChange: (v) {

@@ -323,7 +323,7 @@ class PhoneServer {
       case 'hp':
         final d = (m['delta'] as num?)?.toInt() ?? 0;
         if (d == 0) return;
-        if (d > 0 && fig.health.value >= fig.maxHealth.value) return;
+        if (d > 0 && fig.health.value >= hpCeiling(fig)) return;
         if (d < 0 && fig.health.value <= 0) return;
         gs.action(ChangeHealthCommand(d, id, ch.id, gameState: gs));
         break;
