@@ -18,6 +18,7 @@ import '../services/service_locator.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'phone_server.dart';
+import 'tv_campaign.dart';
 import 'tv_campaign_menus.dart';
 import 'tv_menu.dart';
 import 'tv_backup.dart';
@@ -37,6 +38,26 @@ bool hasLootDeck(GameState gs) =>
 List<Character> _players() => GameMethods.getCurrentCharacters()
     .where((c) => !GameMethods.isObjectiveOrEscort(c.characterClass))
     .toList();
+
+/// The loot deck's "treasure" card is the Random Item card (#1417).
+bool _isRandomItem(LootCard c) => c.gfx == 'treasure';
+
+/// Draws a loot card; the Random Item card is marked in the active campaign
+/// for this scenario (a replay gives no new item, so that is announced).
+void _drawLoot(BuildContext context, GameState gs) {
+  gs.action(DrawLootCardCommand(gameState: gs));
+  final deck = gs.lootDeck;
+  if (!deck.discardPileIsNotEmpty || !_isRandomItem(deck.discardPileTop)) return;
+  final c = TvCampaigns.active;
+  if (c == null) return;
+  final scenario = gs.scenario.value;
+  if (c.randomItems.contains(scenario)) {
+    TvToast.show(context, tr('randomItemAgain'), seconds: 6);
+  } else {
+    TvCampaigns.setRandomItem(c, scenario, true);
+    TvToast.show(context, '${tr('randomItemMarked')}: $scenario', seconds: 5);
+  }
+}
 
 Future<void> showLootMenu(BuildContext context, GameState gs) {
   const cardScale = 2.6;
@@ -86,7 +107,7 @@ Future<void> showLootMenu(BuildContext context, GameState gs) {
           primary: true,
           onPressed: deck.drawPileIsEmpty
               ? null
-              : () => gs.action(DrawLootCardCommand(gameState: gs)),
+              : () => _drawLoot(context, gs),
         ),
         TvMenuButton(
           text: tr('addTreasure'),
@@ -96,6 +117,12 @@ Future<void> showLootMenu(BuildContext context, GameState gs) {
         ),
       ]),
     ];
+    final camp = TvCampaigns.active;
+    if (camp != null &&
+        camp.randomItems.contains(gs.scenario.value) &&
+        deck.drawPileContents.any(_isRandomItem)) {
+      out.add(TvTextRow(tr('randomItemWarn')));
+    }
     if (top != null && players.isNotEmpty) {
       out.add(TvButtonsRow([
         for (final p in players)

@@ -68,9 +68,11 @@ class TvCampaign {
     Map<String, ScenarioProgress>? progress,
     List<PartyMember>? party,
     List<TreasureNote>? treasures,
+    Set<String>? randomItems,
   })  : progress = progress ?? {},
         party = party ?? [],
-        treasures = treasures ?? [];
+        treasures = treasures ?? [],
+        randomItems = randomItems ?? {};
 
   factory TvCampaign.fromJson(Map<String, dynamic> j) {
     final prog = <String, ScenarioProgress>{};
@@ -104,6 +106,11 @@ class TvCampaign {
       progress: prog,
       party: party,
       treasures: treasures,
+      randomItems: {
+        if (j['randomItems'] is List)
+          for (final s in j['randomItems'] as List)
+            if (s is String) s
+      },
     );
   }
 
@@ -113,6 +120,10 @@ class TvCampaign {
   final Map<String, ScenarioProgress> progress;
   final List<PartyMember> party;
   final List<TreasureNote> treasures;
+
+  /// Scenarios whose Random Item loot card has been looted: on a replay the
+  /// card gives nothing again.
+  final Set<String> randomItems;
 
   TreasureNote? treasure(int nr) => treasures.where((t) => t.nr == nr).firstOrNull;
 
@@ -134,6 +145,7 @@ class TvCampaign {
         },
         'party': [for (final p in party) p.toJson()],
         'treasures': [for (final t in treasures) t.toJson()],
+        'randomItems': randomItems.toList()..sort(),
       };
 }
 
@@ -262,6 +274,15 @@ class TvCampaigns {
       ..removeWhere((e) => e.nr == t.nr)
       ..add(t)
       ..sort((a, b) => a.nr.compareTo(b.nr));
+    _save();
+  }
+
+  static void setRandomItem(TvCampaign c, String scenario, bool looted) {
+    if (looted) {
+      c.randomItems.add(scenario);
+    } else {
+      c.randomItems.remove(scenario);
+    }
     _save();
   }
 

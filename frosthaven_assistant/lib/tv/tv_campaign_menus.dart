@@ -583,12 +583,39 @@ Future<void> showTreasureListMenu(
             onPressed: () => later(() => _confirmRemoveTreasure(context, c, t)),
           ),
       ], 4, style: TvRowStyle.tiles),
+      if (c.randomItems.isEmpty) TvTextRow(tr('noRandomItems')),
+      ...tvGrid([
+        for (final s in c.randomItems.toList()..sort())
+          TvMenuButton(
+            text: s,
+            onPressed: () => later(() => _confirmRemoveRandomItem(context, c, s)),
+          ),
+      ], 3, label: tr('randomItems')),
       TvButtonsRow([
         TvMenuButton(
             text: tr('addTreasure'),
             primary: true,
             onPressed: () => later(() => showTreasureMenu(context, gs))),
         TvMenuButton(text: tr('close'), closes: true, onPressed: () {}),
+      ]),
+    ],
+  );
+}
+
+Future<void> _confirmRemoveRandomItem(
+    BuildContext context, TvCampaign c, String scenario) {
+  return showTvMenu<void>(
+    context,
+    title: tr('randomItems'),
+    subtitle: scenario,
+    rows: () => [
+      TvTextRow(tr('randomItemRemoveQ')),
+      TvButtonsRow([
+        TvMenuButton(text: tr('cancel'), closes: true, onPressed: () {}),
+        TvMenuButton(
+            text: tr('delete'),
+            closes: true,
+            onPressed: () => TvCampaigns.setRandomItem(c, scenario, false)),
       ]),
     ],
   );
