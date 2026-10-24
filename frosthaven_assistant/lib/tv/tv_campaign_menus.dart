@@ -140,6 +140,10 @@ Future<void> showCampaignMenu(BuildContext context, GameState gs) {
             text: tr('party'),
             onPressed: () => later(() => showPartyMenu(context, gs, active))),
         TvMenuButton(
+            text: '${tr('treasures')} (${active.treasures.length})',
+            onPressed: () =>
+                later(() => showTreasureListMenu(context, gs, active))),
+        TvMenuButton(
             text: tr('rename'),
             onPressed: () => later(() async {
                   final n = await showTvTextInput(context,
@@ -474,4 +478,137 @@ int? campaignXpOf(GameState gs, Character ch) {
   final c = campaignFor(gs);
   if (c == null) return null;
   return c.party.where((p) => p.classId == ch.characterClass.id).firstOrNull?.xp;
+}
+
+// ======================================================================
+// Treasures (the numbered treasure tiles of the scenarios)
+// ======================================================================
+
+String treasureLine(TreasureNote t) => [
+      if (t.scenario.isNotEmpty) t.scenario,
+      if (t.by.isNotEmpty) t.by,
+    ].join(' · ');
+
+/// Records a looted treasure in the active campaign: its number and who
+/// picked it up; the current scenario goes with it.
+Future<void> showTreasureMenu(BuildContext context, GameState gs) async {
+  final c = TvCampaigns.active;
+  if (c == null) {
+    TvToast.show(context, tr('needCampaign'));
+    return;
+  }
+  final players = GameMethods.getCurrentCharacters()
+      .where((ch) => !GameMethods.isObjectiveOrEscort(ch.characterClass))
+      .toList();
+  final turn = currentTurnItem(gs);
+  int nr = 0;
+  String by = turn is Character && players.contains(turn)
+      ? turn.characterState.display.value
+      : '';
+  bool saved = false;
+
+  await showTvMenu<void>(
+    context,
+    title: tr('addTreasure'),
+    subtitle: tr('treasureSub'),
+    width: 1100,
+    rows: () {
+      final already = nr > 0 ? c.treasure(nr) : null;
+      return [
+        TvStepperRow(
+          label: tr('treasureNr'),
+          min: 0,
+          max: 999,
+          digits: 3,
+          autoEdit: true,
+          value: () => nr,
+          format: (v) => v <= 0 ? '–' : v.toString(),
+          onChange: (v) => nr = v,
+        ),
+        if (players.isNotEmpty)
+          TvButtonsRow([
+            for (final p in players)
+              TvMenuButton(
+                text: p.characterState.display.value,
+                icon: classIconPath(p),
+                iconTint: classTint(p),
+                active: by == p.characterState.display.value,
+                onPressed: () => by = p.characterState.display.value,
+              ),
+          ], label: tr('treasureBy')),
+        if (already != null)
+          TvTextRow('${tr('treasureAlready')}: #${already.nr} · ${treasureLine(already)}'),
+        TvButtonsRow([
+          TvMenuButton(text: tr('cancel'), closes: true, onPressed: () {}),
+          TvMenuButton(
+            text: tr('save'),
+            primary: true,
+            closes: true,
+            onPressed: nr <= 0
+                ? null
+                : () {
+                    TvCampaigns.addTreasure(
+                        c, TreasureNote(nr: nr, scenario: gs.scenario.value, by: by));
+                    saved = true;
+                  },
+          ),
+        ]),
+      ];
+    },
+  );
+  if (saved && context.mounted) {
+    TvToast.show(context, '${tr('treasureSaved')}: #$nr');
+  }
+}
+
+/// The treasures looted in the campaign; OK on one offers to remove it.
+Future<void> showTreasureListMenu(
+    BuildContext context, GameState gs, TvCampaign c) {
+  Future<void> later(Future<void> Function() f) async {
+    if (context.mounted) await f();
+  }
+
+  return showTvMenu<void>(
+    context,
+    title: '${tr('treasures')} · ${c.name}',
+    width: 1300,
+    rebuildOn: TvCampaigns.version,
+    rows: () => [
+      if (c.treasures.isEmpty) TvTextRow(tr('noTreasures')),
+      ...tvGrid([
+        for (final t in c.treasures)
+          TvMenuButton(
+            text: '#${t.nr}',
+            subtitle: treasureLine(t),
+            onPressed: () => later(() => _confirmRemoveTreasure(context, c, t)),
+          ),
+      ], 4, style: TvRowStyle.tiles),
+      TvButtonsRow([
+        TvMenuButton(
+            text: tr('addTreasure'),
+            primary: true,
+            onPressed: () => later(() => showTreasureMenu(context, gs))),
+        TvMenuButton(text: tr('close'), closes: true, onPressed: () {}),
+      ]),
+    ],
+  );
+}
+
+Future<void> _confirmRemoveTreasure(
+    BuildContext context, TvCampaign c, TreasureNote t) {
+  return showTvMenu<void>(
+    context,
+    title: '#${t.nr}',
+    subtitle: treasureLine(t),
+    rows: () => [
+      TvTextRow(tr('treasureRemoveQ')),
+      TvButtonsRow([
+        TvMenuButton(text: tr('cancel'), closes: true, onPressed: () {}),
+        TvMenuButton(
+            text: tr('delete'),
+            closes: true,
+            onPressed: () => TvCampaigns.removeTreasure(c, t)),
+      ]),
+    ],
+  );
 }

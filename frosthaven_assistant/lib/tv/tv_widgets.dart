@@ -517,6 +517,10 @@ class TvListRow extends StatelessWidget {
       child: _img(classIconPath(c), w: 54, h: 54, color: classTint(c)),
     );
     final summons = st.summonList;
+    // loot cards this character picked up in the scenario
+    final lootCount = gs.lootDeck.discardPileContents
+        .where((l) => l.owner == c.characterClass.id)
+        .length;
     return Row(children: [
       _who(
         avatar: avatar,
@@ -560,6 +564,12 @@ class TvListRow extends StatelessWidget {
                   if (campaignXpOf(gs, c) != null)
                     Text('  (${tr('xpTotal')} ${campaignXpOf(gs, c)})',
                         style: TvText.body(18, color: TvColors.muted)),
+                ]),
+              if (!isObjective && lootCount > 0)
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.diamond_outlined, size: 26, color: TvColors.light),
+                  const SizedBox(width: 6),
+                  Text('$lootCount', style: TvText.body(24, color: TvColors.light)),
                 ]),
               TvConditionIcons(figure: st),
               for (final s in summons)

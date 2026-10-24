@@ -18,6 +18,7 @@ import '../services/service_locator.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'phone_server.dart';
+import 'tv_campaign_menus.dart';
 import 'tv_menu.dart';
 import 'tv_backup.dart';
 import 'tv_prefs.dart';
@@ -86,6 +87,12 @@ Future<void> showLootMenu(BuildContext context, GameState gs) {
           onPressed: deck.drawPileIsEmpty
               ? null
               : () => gs.action(DrawLootCardCommand(gameState: gs)),
+        ),
+        TvMenuButton(
+          text: tr('addTreasure'),
+          onPressed: () async {
+            if (context.mounted) await showTreasureMenu(context, gs);
+          },
         ),
       ]),
     ];

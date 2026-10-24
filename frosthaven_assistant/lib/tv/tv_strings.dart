@@ -175,6 +175,18 @@ const Map<String, (String, String)> _strings = {
   'markCompleted': ('Küldetés teljesítve', 'Scenario completed'),
   'markedCompleted': ('Teljesítve', 'Completed'),
   'party': ('Csapat', 'Party'),
+  'treasures': ('Kincsek', 'Treasures'),
+  'addTreasure': ('Kincs felvétele', 'Pick up treasure'),
+  'treasureSub': ('A kincs száma a térképen; a kampányban marad meg', 'The number on the map; kept in the campaign'),
+  'treasureNr': ('Kincs száma', 'Treasure number'),
+  'treasureBy': ('Ki vette fel?', 'Who picked it up?'),
+  'treasureAlready': ('Ezt már felvettétek', 'Already looted'),
+  'treasureSaved': ('Kincs rögzítve', 'Treasure recorded'),
+  'treasureRemoveQ': ('Törlöd ezt a kincset a listából?', 'Remove this treasure from the list?'),
+  'noTreasures': ('Még nincs felvett kincs.', 'No treasures looted yet.'),
+  'needCampaign': ('Ehhez válassz egy kampányt a Kampány menüben', 'Choose a campaign in the Campaign menu first'),
+  'lootTaken': ('Felvett zsákmány', 'Loot picked up'),
+  'noLootTaken': ('Ebben a küldetésben még nem vett fel zsákmányt.', 'No loot picked up in this scenario yet.'),
   'partySub': (
     'A kampány karakterei: név, szint és összesített tapasztalat',
     'The campaign characters: name, level and total experience'

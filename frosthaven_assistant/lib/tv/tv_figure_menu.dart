@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../Layout/loot_card_widget.dart';
 
 import '../Resource/commands/add_condition_command.dart';
 import '../Resource/commands/change_stat_commands/change_health_command.dart';
@@ -10,11 +11,13 @@ import '../Resource/commands/turn_done_command.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_methods.dart';
 import '../Resource/state/game_state.dart';
+import 'tv_campaign.dart';
 import 'tv_menu.dart';
 import 'tv_model.dart';
 import 'tv_play_menus.dart';
 import 'tv_setup_menus.dart';
 import 'tv_strings.dart';
+import 'tv_theme.dart';
 
 /// OK on a figure: initiative, health, XP, conditions and turn actions.
 Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
@@ -108,6 +111,10 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
           }
         },
       ));
+    }
+    if (ch != null && isPlayer) {
+      final loot = _lootRow(gs, ch);
+      if (loot != null) out.add(loot);
     }
     final Monster? monster = item is Monster ? item : null;
     if (monster != null) {
@@ -235,5 +242,48 @@ TvMenuButton _conditionButton(GameState gs, TvTarget t, FigureState fig,
               gs.action(AddConditionCommand(c, t.figureId, t.ownerId, gameState: gs));
             }
           },
+  );
+}
+
+/// The loot cards the character picked up in this scenario, and the
+/// campaign's treasures they looted.
+TvMenuRow? _lootRow(GameState gs, Character ch) {
+  final cards = hasLootDeck(gs)
+      ? gs.lootDeck.discardPileContents
+          .where((c) => c.owner == ch.characterClass.id)
+          .toList()
+      : const [];
+  final name = ch.characterState.display.value;
+  final treasures = TvCampaigns.active?.treasures
+          .where((t) => t.by == name)
+          .toList() ??
+      const <TreasureNote>[];
+  if (!hasLootDeck(gs) && treasures.isEmpty) return null;
+  const scale = 2.2;
+  return TvWidgetRow(
+    () => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (hasLootDeck(gs))
+        cards.isEmpty
+            ? Text(tr('noLootTaken'), style: TvText.body(20, color: TvColors.dim))
+            : Wrap(spacing: 10, runSpacing: 10, children: [
+                for (final c in cards)
+                  SizedBox(
+                    width: 39 * scale,
+                    height: 58.67 * scale,
+                    child: LootCardFront(card: c, scale: scale),
+                  ),
+              ]),
+      if (treasures.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Text(
+            '${tr('treasures')}: ${treasures.map((t) => '#${t.nr}${t.scenario.isEmpty ? '' : ' (${t.scenario})'}').join(', ')}',
+            style: TvText.body(20, color: TvColors.muted),
+          ),
+        ),
+    ]),
+    label: hasLootDeck(gs)
+        ? '${tr('lootTaken')} · ${trLootCards(cards.length)}'
+        : tr('treasures'),
   );
 }

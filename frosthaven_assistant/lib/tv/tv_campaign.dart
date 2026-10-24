@@ -41,6 +41,25 @@ class PartyMember {
       };
 }
 
+/// A scenario treasure (the numbered treasure tile) the party has looted.
+class TreasureNote {
+  TreasureNote({required this.nr, required this.scenario, required this.by});
+
+  factory TreasureNote.fromJson(Map<String, dynamic> j) => TreasureNote(
+        nr: j['nr'] as int? ?? 0,
+        scenario: j['scenario'] as String? ?? '',
+        by: j['by'] as String? ?? '',
+      );
+
+  final int nr;
+  final String scenario;
+
+  /// Name of the character who picked it up ('' if not recorded).
+  final String by;
+
+  Map<String, dynamic> toJson() => {'nr': nr, 'scenario': scenario, 'by': by};
+}
+
 class TvCampaign {
   TvCampaign({
     required this.id,
@@ -48,8 +67,10 @@ class TvCampaign {
     required this.edition,
     Map<String, ScenarioProgress>? progress,
     List<PartyMember>? party,
+    List<TreasureNote>? treasures,
   })  : progress = progress ?? {},
-        party = party ?? [];
+        party = party ?? [],
+        treasures = treasures ?? [];
 
   factory TvCampaign.fromJson(Map<String, dynamic> j) {
     final prog = <String, ScenarioProgress>{};
@@ -69,12 +90,20 @@ class TvCampaign {
         if (p is Map<String, dynamic>) party.add(PartyMember.fromJson(p));
       }
     }
+    final treasures = <TreasureNote>[];
+    final rawTreasures = j['treasures'];
+    if (rawTreasures is List) {
+      for (final t in rawTreasures) {
+        if (t is Map<String, dynamic>) treasures.add(TreasureNote.fromJson(t));
+      }
+    }
     return TvCampaign(
       id: j['id'] as String,
       name: j['name'] as String? ?? '',
       edition: j['edition'] as String? ?? 'Frosthaven',
       progress: prog,
       party: party,
+      treasures: treasures,
     );
   }
 
@@ -83,6 +112,9 @@ class TvCampaign {
   final String edition;
   final Map<String, ScenarioProgress> progress;
   final List<PartyMember> party;
+  final List<TreasureNote> treasures;
+
+  TreasureNote? treasure(int nr) => treasures.where((t) => t.nr == nr).firstOrNull;
 
   ScenarioProgress of(String scenario) =>
       progress[scenario] ?? ScenarioProgress.none;
@@ -101,6 +133,7 @@ class TvCampaign {
             if (e.value != ScenarioProgress.none) e.key: e.value.index,
         },
         'party': [for (final p in party) p.toJson()],
+        'treasures': [for (final t in treasures) t.toJson()],
       };
 }
 
@@ -222,6 +255,20 @@ class TvCampaigns {
 
   /// Persist after editing a campaign or party member in place.
   static void changed() => _save();
+
+  /// Records a looted treasure; the same number again replaces the old entry.
+  static void addTreasure(TvCampaign c, TreasureNote t) {
+    c.treasures
+      ..removeWhere((e) => e.nr == t.nr)
+      ..add(t)
+      ..sort((a, b) => a.nr.compareTo(b.nr));
+    _save();
+  }
+
+  static void removeTreasure(TvCampaign c, TreasureNote t) {
+    c.treasures.remove(t);
+    _save();
+  }
 
   static void setParty(TvCampaign c, List<PartyMember> party) {
     c.party
