@@ -237,11 +237,11 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
   }
 
   /// The TV remote's colour keys (they come through HDMI-CEC): red = next
-  /// (see [_redKey]), yellow = modifier draw, green = loot, blue = decks.
+  /// (see [_redKey]), green = modifier draw, yellow = loot, blue = decks.
   VoidCallback? _colourKeyAction(LogicalKeyboardKey k) {
     if (k == LogicalKeyboardKey.colorF0Red) return _redKey;
-    if (k == LogicalKeyboardKey.colorF2Yellow) return _drawModifier;
-    if (k == LogicalKeyboardKey.colorF1Green) {
+    if (k == LogicalKeyboardKey.colorF1Green) return _drawModifier;
+    if (k == LogicalKeyboardKey.colorF2Yellow) {
       return hasLootDeck(_gs) ? () => _openMenu(() => showLootMenu(context, _gs)) : () {};
     }
     if (k == LogicalKeyboardKey.colorF3Blue) {
@@ -571,13 +571,13 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
       ),
       (
         TvFooterButton(tr('drawModifier'),
-            icon: Icons.layers, keyColor: TvKeyColors.yellow),
+            icon: Icons.layers, keyColor: TvKeyColors.green),
         _drawModifier
       ),
       if (hasLootDeck(_gs))
         (
           TvFooterButton(tr('btnLoot'),
-              icon: Icons.diamond_outlined, keyColor: TvKeyColors.green),
+              icon: Icons.diamond_outlined, keyColor: TvKeyColors.yellow),
           () => _openMenu(() => showLootMenu(context, _gs))
         ),
       if (sectionsOf(_gs).isNotEmpty)
