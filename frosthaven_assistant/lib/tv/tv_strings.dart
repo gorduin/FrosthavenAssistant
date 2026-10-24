@@ -176,6 +176,8 @@ const Map<String, (String, String)> _strings = {
   'markedCompleted': ('Teljesítve', 'Completed'),
   'party': ('Csapat', 'Party'),
   'treasures': ('Kincsek', 'Treasures'),
+  'toElite': ('Elitté', 'Make elite'),
+  'toNormal': ('Simává', 'Make normal'),
   'addTreasure': ('Kincs felvétele', 'Pick up treasure'),
   'treasureSub': ('A kincs száma a térképen; a kampányban marad meg', 'The number on the map; kept in the campaign'),
   'treasureNr': ('Kincs száma', 'Treasure number'),

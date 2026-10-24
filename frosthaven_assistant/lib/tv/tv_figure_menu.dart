@@ -4,6 +4,7 @@ import '../Layout/loot_card_widget.dart';
 import '../Resource/commands/add_condition_command.dart';
 import '../Resource/commands/change_stat_commands/change_health_command.dart';
 import '../Resource/commands/change_stat_commands/change_xp_command.dart';
+import '../Resource/commands/ice_wraith_change_form_command.dart';
 import '../Resource/commands/remove_condition_command.dart';
 import '../Resource/commands/set_init_command.dart';
 import '../Resource/commands/set_level_command.dart';
@@ -192,7 +193,15 @@ Future<void> showFigureMenu(BuildContext context, GameState gs, TvTarget t) {
             onPressed: () => later(() => confirmRemoveCharacter(context, gs, ch))),
       ]));
     } else if (monster != null) {
+      // standee: sima ↔ elit váltás (pl. Ice Wraith lapja), a szám marad
+      final inst = t.instance;
       out.add(TvButtonsRow([
+        if (inst != null && inst.type != MonsterType.boss)
+          TvMenuButton(
+              text: inst.type == MonsterType.elite ? tr('toNormal') : tr('toElite'),
+              onPressed: () => gs.action(IceWraithChangeFormCommand(
+                  inst.type == MonsterType.elite, t.ownerId, t.figureId,
+                  gameState: gs))),
         TvMenuButton(
             text: tr('addStandees'),
             closes: true,
