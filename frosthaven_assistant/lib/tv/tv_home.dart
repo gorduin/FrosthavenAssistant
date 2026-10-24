@@ -8,6 +8,7 @@ import '../Resource/commands/draw_modifier_card_command.dart';
 import '../Resource/commands/imbue_element_command.dart';
 import '../Resource/commands/reorder_list_command.dart';
 import '../Resource/commands/use_element_command.dart';
+import '../Resource/commands/turn_done_command.dart';
 import '../Resource/enums.dart';
 import '../Resource/game_actions.dart';
 import '../Resource/game_methods.dart';
@@ -219,12 +220,34 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
       return;
     }
     runDrawOrNextRoundAction(_gs);
-    // guided combat starts right after the draw
-    if (isDraw && _gs.roundState.value == RoundState.playTurns) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_menuOpen) _openCombat();
-      });
+  }
+
+  /// Red key: draw; during the round the current figure's turn is done and
+  /// the next one comes (after the last one, red again ends the round).
+  void _redKey() {
+    final cur = currentTurnItem(_gs);
+    if (_gs.roundState.value == RoundState.chooseInitiative || cur == null) {
+      _drawOrNextRound();
+      return;
     }
+    _gs.action(TurnDoneCommand(cur.id, gameState: _gs));
+    final next = currentTurnItem(_gs);
+    TvToast.show(context,
+        next == null ? tr('allDoneRed') : trTurnOf(_turnName(next)));
+  }
+
+  /// The TV remote's colour keys (they come through HDMI-CEC): red = next
+  /// (see [_redKey]), yellow = modifier draw, green = loot, blue = decks.
+  VoidCallback? _colourKeyAction(LogicalKeyboardKey k) {
+    if (k == LogicalKeyboardKey.colorF0Red) return _redKey;
+    if (k == LogicalKeyboardKey.colorF2Yellow) return _drawModifier;
+    if (k == LogicalKeyboardKey.colorF1Green) {
+      return hasLootDeck(_gs) ? () => _openMenu(() => showLootMenu(context, _gs)) : () {};
+    }
+    if (k == LogicalKeyboardKey.colorF3Blue) {
+      return () => _openMenu(() => showDeckMenu(context, _gs));
+    }
+    return null;
   }
 
   String _turnName(ListItemData item) {
@@ -356,6 +379,12 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
       return KeyEventResult.handled;
     }
     if (_menuOpen) return KeyEventResult.ignored;
+
+    final colour = _colourKeyAction(k);
+    if (colour != null) {
+      if (e is KeyDownEvent) colour();
+      return KeyEventResult.handled;
+    }
 
     if (_isOk(k)) {
       if (e is KeyDownEvent) {
@@ -529,19 +558,26 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
                   ? tr('combatBtn')
                   : '${tr('combatBtn')} · ${trTurnOf(_turnName(currentTurnItem(_gs)!))}',
               primary: true,
-              icon: Icons.sports_martial_arts),
+              icon: Icons.sports_martial_arts,
+              keyColor: TvKeyColors.red),
           _openCombat
         ),
       (
         TvFooterButton(isDraw ? tr('draw') : tr('nextRound'),
             primary: isDraw,
-            icon: isDraw ? Icons.style : Icons.skip_next),
+            icon: isDraw ? Icons.style : Icons.skip_next,
+            keyColor: isDraw ? TvKeyColors.red : null),
         _drawOrNextRound
       ),
-      (TvFooterButton(tr('drawModifier'), icon: Icons.layers), _drawModifier),
+      (
+        TvFooterButton(tr('drawModifier'),
+            icon: Icons.layers, keyColor: TvKeyColors.yellow),
+        _drawModifier
+      ),
       if (hasLootDeck(_gs))
         (
-          TvFooterButton(tr('btnLoot'), icon: Icons.diamond_outlined),
+          TvFooterButton(tr('btnLoot'),
+              icon: Icons.diamond_outlined, keyColor: TvKeyColors.green),
           () => _openMenu(() => showLootMenu(context, _gs))
         ),
       if (sectionsOf(_gs).isNotEmpty)
@@ -550,7 +586,7 @@ class _TvHomeScreenState extends State<TvHomeScreen> {
           () => _openMenu(() => showSectionMenu(context, _gs))
         ),
       (
-        TvFooterButton(tr('btnDeck'), icon: Icons.tune),
+        TvFooterButton(tr('btnDeck'), icon: Icons.tune, keyColor: TvKeyColors.blue),
         () => _openMenu(() => showDeckMenu(context, _gs))
       ),
       (

@@ -177,6 +177,7 @@ const Map<String, (String, String)> _strings = {
   'party': ('Csapat', 'Party'),
   'treasures': ('Kincsek', 'Treasures'),
   'toElite': ('Elitté', 'Make elite'),
+  'allDoneRed': ('Mindenki végzett — a piros gomb újra: Kör vége', 'Everyone is done — red again: end of round'),
   'randomItems': ('Véletlen tárgyak', 'Random items'),
   'randomItemMarked': ('Véletlen tárgy felvéve, a kampányban megjelölve', 'Random item looted, marked in the campaign'),
   'randomItemAgain': ('Ennek a küldetésnek a véletlen tárgyát már korábban felvettétek — nem jár újra', 'This scenario\'s random item was already looted — no new item'),

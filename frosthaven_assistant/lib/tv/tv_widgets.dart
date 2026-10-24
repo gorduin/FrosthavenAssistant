@@ -1186,10 +1186,21 @@ class TvModifierPanel extends StatelessWidget {
 // ======================================================================
 
 class TvFooterButton {
-  const TvFooterButton(this.text, {this.primary = false, this.icon});
+  const TvFooterButton(this.text, {this.primary = false, this.icon, this.keyColor});
   final String text;
   final bool primary;
   final IconData? icon;
+
+  /// The TV remote's colour key that triggers this button (shown as a dot).
+  final Color? keyColor;
+}
+
+/// The TV remote's colour keys, as shown on the footer buttons.
+class TvKeyColors {
+  static const red = Color(0xFFE53935);
+  static const green = Color(0xFF43A047);
+  static const yellow = Color(0xFFFDD835);
+  static const blue = Color(0xFF1E88E5);
 }
 
 class TvFooter extends StatelessWidget {
@@ -1253,6 +1264,17 @@ class TvFooter extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (b.keyColor != null)
+          Container(
+            width: 14,
+            height: 14,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              color: b.keyColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0x99000000), width: 1.5),
+            ),
+          ),
         if (b.icon != null)
           Padding(
             padding: const EdgeInsets.only(right: 10),
